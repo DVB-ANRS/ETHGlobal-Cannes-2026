@@ -4,6 +4,8 @@ import healthRouter from "./routes/health.js";
 import agentRouter from "./routes/agent.js";
 import { appConfig } from "./utils/config.js";
 import { logger } from "./utils/logger.js";
+import { gateway } from "./core/gateway.js";
+import { privacyRouter } from "./core/privacy.js";
 
 const app = express();
 
@@ -22,6 +24,26 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(appConfig.gatewayPort, () => {
-  logger.info(`SecretPay Gateway on :${appConfig.gatewayPort}`);
-});
+// ── Initialize privacy layer then start server ──
+async function start() {
+  try {
+    await privacyRouter.init({
+      apiKey: appConfig.unlinkApiKey,
+      mnemonic: appConfig.agentMnemonic,
+      evmPrivateKey: appConfig.agentEvmPrivateKey,
+      rpcUrl: appConfig.rpcUrl,
+    });
+    gateway.setPrivacy(privacyRouter);
+    logger.info("Privacy layer initialized ✓");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`Privacy init failed: ${msg} — running with stub privacy`);
+    // Server still starts with stub privacy so other modules can be tested
+  }
+
+  app.listen(appConfig.gatewayPort, () => {
+    logger.info(`SecretPay Gateway on :${appConfig.gatewayPort}`);
+  });
+}
+
+start();
