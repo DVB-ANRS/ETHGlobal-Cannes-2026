@@ -21,6 +21,7 @@ export const appConfig = {
 
   get unlinkApiKey() { return require("UNLINK_API_KEY"); },
   get agentMnemonic() { return require("AGENT_MNEMONIC"); },
+  get agentEvmPrivateKey() { return require("EVM_PRIVATE_KEY") as `0x${string}`; },
   get mockReceiverAddress() { return require("MOCK_RECEIVER_ADDRESS"); },
   get mockReceiverPrivateKey() { return require("MOCK_RECEIVER_PRIVATE_KEY"); },
 };
