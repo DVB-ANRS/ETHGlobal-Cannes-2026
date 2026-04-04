@@ -12,6 +12,7 @@ const WS_URL = "ws://localhost:3001"
 let dmk: DeviceManagementKit | null = null
 let sessionId: string | null = null
 let signer: SignerEth | null = null
+let operatorAddress: string | null = null
 let ws: WebSocket | null = null
 
 const log = (msg: string) => {
@@ -54,7 +55,7 @@ function buildTypedData(amount: string, recipient: string, service: string) {
   }
 }
 
-// 1. Connect Ledger
+// 1. Connect Ledger + read operator address
 async function connectLedger() {
   dmk = new DeviceManagementKitBuilder()
     .addTransport(webHidTransportFactory)
@@ -71,7 +72,13 @@ async function connectLedger() {
         try {
           sessionId = await dmk!.connect({ deviceId: device.id })
           signer = new SignerEthBuilder({ sdk: dmk!, sessionId }).build()
-          log(`Connected — session: ${sessionId}`)
+
+          // Read the operator's Ethereum address from the Ledger
+          log("Reading operator address from Ledger...")
+          operatorAddress = await getAddressFromLedger()
+          log(`Operator: ${operatorAddress}`)
+          document.getElementById("operator")!.textContent = operatorAddress
+
           setStatus("LEDGER CONNECTED", "#1a4a1a")
           resolve()
         } catch (e) {
@@ -87,8 +94,25 @@ async function connectLedger() {
   })
 }
 
-// 2. Sign EIP-712 typed data on Ledger — structured Clear Signing display
-async function approveOnLedger(amount: string, recipient: string, service: string): Promise<"approved" | "rejected"> {
+// Read address via getAddress device action
+function getAddressFromLedger(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const { observable } = signer!.getAddress(DERIVATION_PATH)
+    observable.subscribe({
+      next: (state) => {
+        if (state.status === DeviceActionStatus.Completed) {
+          resolve((state as any).output.address)
+        }
+        if (state.status === DeviceActionStatus.Error) {
+          reject(new Error("Failed to read address from Ledger"))
+        }
+      },
+    })
+  })
+}
+
+// 2. Sign EIP-712 typed data — returns signature + operator address
+async function approveOnLedger(amount: string, recipient: string, service: string): Promise<{ approved: boolean; signature?: string }> {
   if (!signer) throw new Error("Ledger not connected")
 
   const typedData = buildTypedData(amount, recipient, service)
@@ -101,27 +125,25 @@ async function approveOnLedger(amount: string, recipient: string, service: strin
     observable.subscribe({
       next: (state) => {
         switch (state.status) {
-          case DeviceActionStatus.Pending: {
-            const iv = (state as any).intermediateValue
-            if (iv?.requiredUserInteraction) {
-              log(`  Device: ${iv.requiredUserInteraction}`)
-            }
+          case DeviceActionStatus.Pending:
             break
-          }
-          case DeviceActionStatus.Completed:
+          case DeviceActionStatus.Completed: {
+            const output = (state as any).output
+            const sig = `0x${output.r}${output.s}${output.v.toString(16)}`
             log("✓ APPROVED on Ledger")
             setStatus("APPROVED", "#1a4a1a")
-            resolve("approved")
+            resolve({ approved: true, signature: sig })
             break
+          }
           case DeviceActionStatus.Error:
             log("✗ REJECTED on Ledger")
             setStatus("REJECTED", "#4a1a1a")
-            resolve("rejected")
+            resolve({ approved: false })
             break
           case DeviceActionStatus.Stopped:
             log("✗ CANCELLED")
             setStatus("CANCELLED", "#4a1a1a")
-            resolve("rejected")
+            resolve({ approved: false })
             break
         }
       },
@@ -136,7 +158,11 @@ function connectWebSocket() {
   ws.onopen = () => {
     log("Connected to SecretPay backend")
     setStatus("LEDGER READY", "#1a4a1a")
-    ws!.send(JSON.stringify({ type: "status", payload: { message: "Dashboard ready, Ledger connected" } }))
+    // Send operator address to backend on connect
+    ws!.send(JSON.stringify({
+      type: "status",
+      payload: { message: "Ledger connected", operatorAddress },
+    }))
   }
 
   ws.onmessage = async (event) => {
@@ -156,7 +182,11 @@ function connectWebSocket() {
     document.getElementById("details")!.innerHTML = ""
     ws!.send(JSON.stringify({
       type: "approval_response",
-      payload: { approved: result === "approved" },
+      payload: {
+        approved: result.approved,
+        signature: result.signature,
+        operatorAddress,
+      },
     }))
     setStatus("LEDGER READY", "#1a4a1a")
   }

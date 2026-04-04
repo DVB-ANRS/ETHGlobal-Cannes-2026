@@ -17,6 +17,7 @@ interface WsMessage {
 class LedgerBridge {
   private wss: WebSocketServer | null = null
   private browserSocket: WebSocket | null = null
+  private operatorAddress: string | null = null
   private pendingApproval: {
     resolve: (result: "approved" | "rejected") => void
   } | null = null
@@ -33,21 +34,34 @@ class LedgerBridge {
       ws.on("message", (raw) => {
         const msg = JSON.parse(raw.toString()) as WsMessage
 
+        if (msg.type === "status" && msg.payload.operatorAddress) {
+          this.operatorAddress = msg.payload.operatorAddress as string
+          logger.ledger(`Operator address: ${this.operatorAddress}`)
+        }
+
         if (msg.type === "approval_response" && this.pendingApproval) {
           const approved = msg.payload.approved === true
+          const signerAddress = msg.payload.operatorAddress as string | undefined
+
+          if (approved && this.operatorAddress && signerAddress) {
+            if (signerAddress.toLowerCase() !== this.operatorAddress.toLowerCase()) {
+              logger.ledger(`✗ REJECTED — signer ${signerAddress} ≠ operator ${this.operatorAddress}`)
+              this.pendingApproval.resolve("rejected")
+              this.pendingApproval = null
+              return
+            }
+          }
+
           logger.ledger(approved ? "✓ APPROVED on Ledger" : "✗ REJECTED on Ledger")
           this.pendingApproval.resolve(approved ? "approved" : "rejected")
           this.pendingApproval = null
-        }
-
-        if (msg.type === "status") {
-          logger.ledger(`Device: ${msg.payload.message}`)
         }
       })
 
       ws.on("close", () => {
         logger.ledger("Dashboard disconnected")
         this.browserSocket = null
+        this.operatorAddress = null
         if (this.pendingApproval) {
           this.pendingApproval.resolve("rejected")
           this.pendingApproval = null
@@ -58,17 +72,27 @@ class LedgerBridge {
     logger.ledger(`WebSocket server on :${LEDGER_WS_PORT} — open dashboard in browser`)
   }
 
+  getOperatorAddress(): string | null {
+    return this.operatorAddress
+  }
+
   async requestApproval(details: ApprovalDetails): Promise<"approved" | "rejected"> {
     if (!this.browserSocket || this.browserSocket.readyState !== WebSocket.OPEN) {
       logger.ledger("No dashboard connected — approval denied")
       return "rejected"
     }
 
+    if (!this.operatorAddress) {
+      logger.ledger("No operator address registered — approval denied")
+      return "rejected"
+    }
+
     logger.ledger("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     logger.ledger(`  Requesting approval on Ledger`)
-    logger.ledger(`  Amount:    $${details.amount} USDC`)
-    logger.ledger(`  Recipient: ${details.recipient}`)
-    logger.ledger(`  Service:   ${details.service}`)
+    logger.ledger(`  Operator: ${this.operatorAddress}`)
+    logger.ledger(`  Amount:   $${details.amount} USDC`)
+    logger.ledger(`  To:       ${details.recipient}`)
+    logger.ledger(`  Service:  ${details.service}`)
     logger.ledger("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
     const msg: WsMessage = {
@@ -93,6 +117,7 @@ class LedgerBridge {
     this.wss?.close()
     this.wss = null
     this.browserSocket = null
+    this.operatorAddress = null
   }
 }
 
