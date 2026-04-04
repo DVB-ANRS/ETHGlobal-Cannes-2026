@@ -793,7 +793,7 @@ If the x402 facilitator is **completely non-functional** (API down, no testnet s
 
 2. **Facilitator URL `https://x402.org/facilitator` fonctionne** — pas besoin de self-host. Le facilitator gère la vérification et le settlement sur Base Sepolia.
 
-3. **Même wallet pour payer et receiver** — `MOCK_RECEIVER_ADDRESS` = `EVM_PUBLIC_KEY` = `0x723B1Abbad41507Ecd4Fa7D20670614F90665f4e`. Un seul wallet funded suffit pour le hackathon. En prod on séparerait payer et receiver. Impact nul sur le module privacy (le wallet agent via mnemonic est différent du receiver).
+3. **Wallet receiver séparé du wallet agent** — `MOCK_RECEIVER_ADDRESS` = `0x3740C4E9696C31b861b6376c8E58F97C9e881099` (wallet dédié, généré pour le mock server). Le wallet agent (EVM_PUBLIC_KEY `0x723B...`) est celui qui paie. Séparation propre : le payer et le receiver sont deux wallets distincts. Note : ce receiver wallet n'a pas besoin d'être funded, il reçoit les USDC via le facilitator.
 
 4. **Prix en string `"$0.01"` marche** — le `ExactEvmScheme` server-side parse correctement les prix en string dollar. La conversion en units USDC (10000 pour $0.01) est automatique.
 
@@ -839,7 +839,7 @@ If the x402 facilitator is **completely non-functional** (API down, no testnet s
 - [x] `scripts/test-payment.ts` — standalone test
 - [x] Test 1: Verifies 402 response structure (works without funding)
 - [x] Test 2: Verifies paid request flow (requires funded wallet)
-- [ ] Prints Basescan link for settlement tx (header present but base64 — needs decode)
+- [x] Prints Basescan link for settlement tx (base64 decoded from PAYMENT-RESPONSE header)
 - [x] `src/demo/agent-sim.ts` — exercises 5 use cases
 - [x] Sends requests to gateway (port 3000), not directly to mock server
 - [x] Displays results clearly for the video demo

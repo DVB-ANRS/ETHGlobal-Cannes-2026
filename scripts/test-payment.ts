@@ -13,7 +13,6 @@ import { config } from "dotenv";
 config();
 
 import { createPaymentFetch } from "../src/core/payment.js";
-import { generatePrivateKey } from "viem/accounts";
 
 const MOCK_URL = `http://localhost:${process.env.MOCK_SERVER_PORT ?? "4021"}`;
 
@@ -61,9 +60,13 @@ async function test1_verify402() {
 async function test2_paidRequest() {
   log("TEST 2", COLORS.cyan, "Paid request to /data WITH createPaymentFetch");
 
-  // Use MOCK_RECEIVER_PRIVATE_KEY as a funded test key, or generate a new one
-  const testKey = (process.env.MOCK_RECEIVER_PRIVATE_KEY as `0x${string}`) ?? generatePrivateKey();
-  log("TEST 2", COLORS.gray, `Using key: ${testKey.slice(0, 10)}...`);
+  // Use EVM_PRIVATE_KEY (funded agent wallet) as the payer
+  const testKey = process.env.EVM_PRIVATE_KEY as `0x${string}` | undefined;
+  if (!testKey) {
+    log("TEST 2", COLORS.red, "SKIP — EVM_PRIVATE_KEY not set in .env");
+    return false;
+  }
+  log("TEST 2", COLORS.gray, `Payer key: ${testKey.slice(0, 10)}...`);
 
   try {
     const payFetch = createPaymentFetch(testKey);
@@ -74,10 +77,21 @@ async function test2_paidRequest() {
       const data = await res.json();
       log("TEST 2", COLORS.green, `Data received: ${JSON.stringify(data)}`);
 
-      // Check for settlement info in PAYMENT-RESPONSE header
+      // Decode settlement info from PAYMENT-RESPONSE header (base64)
       const paymentResponse = res.headers.get("payment-response");
       if (paymentResponse) {
-        log("TEST 2", COLORS.green, `Settlement header: ${paymentResponse.slice(0, 200)}`);
+        try {
+          const decoded = JSON.parse(Buffer.from(paymentResponse, "base64").toString("utf-8"));
+          if (decoded.transaction) {
+            log("TEST 2", COLORS.green, `Settlement tx: ${decoded.transaction}`);
+            log("TEST 2", COLORS.green, `Basescan: https://sepolia.basescan.org/tx/${decoded.transaction}`);
+          }
+          if (decoded.success !== undefined) {
+            log("TEST 2", COLORS.gray, `Settlement success: ${decoded.success}`);
+          }
+        } catch {
+          log("TEST 2", COLORS.yellow, `Settlement header (raw): ${paymentResponse.slice(0, 100)}`);
+        }
       }
       log("TEST 2", COLORS.green, "PASS — paid request succeeded\n");
       return true;
