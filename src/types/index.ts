@@ -40,3 +40,21 @@ export interface PolicyConfig {
   allowedRecipients: string[];
   blockedRecipients: string[];
 }
+
+// ─── Onboarding types ────────────────────────────────────────────────
+
+export interface AgentPolicy {
+  agentAddress: string;
+  label?: string;
+  maxPerTx: number;
+  maxPerDay: number;
+  spentToday: number;
+  lastResetDate: string; // ISO date "2026-04-05"
+}
+
+export interface UserVault {
+  walletAddress: string;
+  derivedMnemonic: string;
+  vaultReady: boolean;
+  agents: Map<string, AgentPolicy>; // agentAddress → policy
+}
