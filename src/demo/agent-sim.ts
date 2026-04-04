@@ -89,29 +89,29 @@ async function main() {
     process.exit(1);
   }
 
-  // ── UC1: Auto-approve ($0.01 < $5 threshold) ──
-  separator("UC1: Auto-approve — $0.01 request");
-  await sendRequest(`${MOCK_BASE}/data`, "Auto-approve $0.01");
+  // ── UC1: Auto-approve ($0.10 < $1 ledger threshold) ──
+  separator("UC1: Auto-approve — $0.10 request");
+  await sendRequest(`${MOCK_BASE}/data`, "Auto-approve $0.10");
 
-  // ── UC2: Ledger approve ($10 > $5 threshold) ──
-  separator("UC2: Ledger approve — $10 request");
+  // ── UC2: Ledger approve ($1.50 >= $1 ledger threshold, <= $2 cap) ──
+  separator("UC2: Ledger approve — $1.50 request");
   logger.payment(">>> Press APPROVE on Ledger device <<<");
-  await sendRequest(`${MOCK_BASE}/bulk-data`, "Ledger approve $10");
+  await sendRequest(`${MOCK_BASE}/bulk-data`, "Ledger approve $1.50");
 
-  // ── UC3: Ledger reject ($10 > $5 threshold) ──
-  separator("UC3: Ledger reject — $10 request");
+  // ── UC3: Ledger reject ($1.50 >= $1 ledger threshold) ──
+  separator("UC3: Ledger reject — $1.50 request");
   logger.payment(">>> Press REJECT on Ledger device <<<");
-  await sendRequest(`${MOCK_BASE}/bulk-data`, "Ledger reject $10");
+  await sendRequest(`${MOCK_BASE}/bulk-data`, "Ledger reject $1.50");
 
   // ── UC4: Budget exhaustion ──
-  separator("UC4: Budget exhaustion — 50× $0.01 requests");
+  separator("UC4: Budget exhaustion — 20× $0.50 requests");
   logger.payment(
-    "Sending 50 requests to hit daily budget ($50 maxPerDay)..."
+    "Sending 20 requests at $0.50 to hit daily budget ($10 maxPerDay)..."
   );
-  for (let i = 1; i <= 50; i++) {
+  for (let i = 1; i <= 20; i++) {
     const result = await sendRequest(
-      `${MOCK_BASE}/data`,
-      `Budget test ${i}/50`
+      `${MOCK_BASE}/budget-data`,
+      `Budget test ${i}/20`
     );
     // Stop early if policy escalates to ledger
     if (result.payment?.policy === "ledger-approved" || result.reason === "ledger") {
