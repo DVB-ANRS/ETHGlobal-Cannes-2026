@@ -25,8 +25,12 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: "Internal server error" });
 });
 
-// ── Initialize privacy layer then start server ──
+// ── Initialize modules then start server ──
 async function start() {
+  // Payment module has no async init — wire it unconditionally
+  gateway.setPayment({ createPaymentFetch });
+  logger.info("Payment module wired ✓");
+
   try {
     await privacyRouter.init({
       apiKey: appConfig.unlinkApiKey,
@@ -36,12 +40,9 @@ async function start() {
     });
     gateway.setPrivacy(privacyRouter);
     logger.info("Privacy layer initialized ✓");
-    gateway.setPayment({ createPaymentFetch });
-    logger.info("Payment module wired ✓");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.error(`Privacy init failed: ${msg} — running with stub privacy`);
-    // Server still starts with stub privacy so other modules can be tested
   }
 
   app.listen(appConfig.gatewayPort, () => {
