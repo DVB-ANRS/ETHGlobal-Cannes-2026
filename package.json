@@ -1,0 +1,37 @@
+{
+  "name": "secretpay",
+  "version": "1.0.0",
+  "description": "Private payment middleware for AI agents — ETHGlobal Cannes 2026",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "mock": "tsx src/mock/x402-server.ts",
+    "demo": "tsx src/demo/agent-sim.ts",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "@ledgerhq/device-management-kit": "^1.2.0",
+    "@ledgerhq/device-signer-kit-ethereum": "^1.13.0",
+    "@ledgerhq/device-transport-kit-web-hid": "^1.2.3",
+    "@unlink-xyz/sdk": "0.0.2-canary.0",
+    "@x402/core": "^2.9.0",
+    "@x402/evm": "^2.9.0",
+    "@x402/express": "^2.9.0",
+    "@x402/fetch": "^2.9.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1",
+    "tsx": "^4.21.0",
+    "viem": "^2.47.10"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.5.2",
+    "typescript": "^6.0.2"
+  }
+}
