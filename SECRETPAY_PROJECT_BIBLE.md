@@ -2,8 +2,6 @@
 
 ## ETHGlobal Cannes 2026 | Team DVB | April 3-5
 
-> Ce document explique TOUT le projet. Lis-le en entier avant de toucher au code.
-
 ---
 
 ## 1. C'est quoi SecretPay ?

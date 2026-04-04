@@ -144,10 +144,34 @@ export class Gateway {
 
     // ── Step 5 : Handle decision ──
     if (decision === "denied") {
+      this.paymentHistory.push({
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        url,
+        amount,
+        recipient,
+        burner: "",
+        policy: "denied",
+        status: "denied",
+      });
       return { status: 403, error: "Payment denied by policy", reason: "Recipient is blacklisted or amount exceeds hard cap" };
     }
 
+    // Ledger: push pending record immediately so dashboard shows it while waiting
+    let pendingRecord: PaymentRecord | undefined;
     if (decision === "ledger") {
+      pendingRecord = {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        url,
+        amount,
+        recipient,
+        burner: "",
+        policy: "ledger",
+        status: "pending",
+      };
+      this.paymentHistory.push(pendingRecord);
+
       logger.ledger("Requesting hardware approval...");
       const approval = await this.ledger.requestApproval({
         amount,
@@ -156,9 +180,11 @@ export class Gateway {
       });
       if (approval === "rejected") {
         logger.ledger("Operator REJECTED the payment");
+        pendingRecord.status = "rejected";
         return { status: 403, error: "Payment rejected by operator", reason: "Ledger approval denied" };
       }
       logger.ledger("Operator APPROVED the payment");
+      pendingRecord.status = "approved";
     }
 
     // ── Step 6 : Privacy — withdraw to burner ──
@@ -216,17 +242,27 @@ export class Gateway {
 
     this.policy.recordSpending(amountNum);
 
-    const record: PaymentRecord = {
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      url,
-      amount,
-      recipient,
-      burner: burnerAddress,
-      policy: decision,
-      txHash,
-    };
-    this.paymentHistory.push(record);
+    // For ledger: update the pending record already in history.
+    // For auto: push a new approved record.
+    let record: PaymentRecord;
+    if (pendingRecord) {
+      pendingRecord.burner = burnerAddress;
+      pendingRecord.txHash = txHash;
+      record = pendingRecord;
+    } else {
+      record = {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        url,
+        amount,
+        recipient,
+        burner: burnerAddress,
+        policy: decision,
+        status: "approved",
+        txHash,
+      };
+      this.paymentHistory.push(record);
+    }
 
     logger.gateway(`Request complete — payment recorded (${record.id.slice(0, 8)})`);
 
