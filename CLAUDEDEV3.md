@@ -785,30 +785,64 @@ If the x402 facilitator is **completely non-functional** (API down, no testnet s
 
 ---
 
+## Implementation Notes (post-dev)
+
+### Découvertes pendant l'implémentation
+
+1. **Header `PAYMENT-REQUIRED` est base64-encodé** — le middleware x402 renvoie le header en base64, pas en JSON brut. Il faut `Buffer.from(header, "base64")` avant `JSON.parse()`. Corrigé dans `test-payment.ts`.
+
+2. **Facilitator URL `https://x402.org/facilitator` fonctionne** — pas besoin de self-host. Le facilitator gère la vérification et le settlement sur Base Sepolia.
+
+3. **Même wallet pour payer et receiver** — `MOCK_RECEIVER_ADDRESS` = `EVM_PUBLIC_KEY` = `0x723B1Abbad41507Ecd4Fa7D20670614F90665f4e`. Permet de tester sans perdre de fonds (USDC fait un aller-retour). Documenté dans `CLAUDEDEV2.md`.
+
+4. **Prix en string `"$0.01"` marche** — le `ExactEvmScheme` server-side parse correctement les prix en string dollar. La conversion en units USDC (10000 pour $0.01) est automatique.
+
+5. **`toClientEvmSigner(account, publicClient)` avec publicClient** — active le path EIP-3009 (transferWithAuthorization) pour USDC, plus efficace que Permit2.
+
+### Résultats du smoke test (3/3 passed)
+
+- **Test 1** : `GET /data` sans paiement → 402 + header base64 avec requirements (scheme exact, 10000 units, payTo correct)
+- **Test 2** : `GET /data` avec `createPaymentFetch` → 200 + données + settlement tx onchain
+- **Test 3** : `GET /bulk-data` sans paiement → 402 avec amount 10000000 ($10)
+
+### Fichiers créés
+
+| Fichier | Lignes | Status |
+|---------|--------|--------|
+| `src/core/payment.ts` | ~50 | Fonctionnel, testé |
+| `src/mock/x402-server.ts` | ~95 | Fonctionnel, testé |
+| `scripts/test-payment.ts` | ~145 | 3/3 tests passent |
+| `src/demo/agent-sim.ts` | ~120 | Prêt, dépend du gateway (Dev 1) |
+
+### En attente
+
+- `agent-sim.ts` ne peut être testé que quand le gateway (Dev 1), privacy (Dev 2), et policy (Dev 4) sont intégrés
+- Le header `PAYMENT-RESPONSE` du settlement est aussi base64 — le gateway devra le décoder pour extraire le `txHash`
+
+---
+
 ## Validation Checklist
 
-Before marking your work as done:
-
-- [ ] `src/core/payment.ts` — `createPaymentFetch(key)` returns a working fetch wrapper
-- [ ] Uses `wrapFetchWithPaymentFromConfig` (NOT the fake `createX402Fetch` from TASKS.md)
-- [ ] Uses `ExactEvmScheme` from `@x402/evm/exact/client` (client-side, not server-side)
-- [ ] Uses `toClientEvmSigner` to adapt viem account
-- [ ] Logs via `logger.payment()`
-- [ ] `src/mock/x402-server.ts` — starts on port 4021
-- [ ] Uses `paymentMiddleware` from `@x402/express` (real middleware, NOT a stub)
-- [ ] Uses `HTTPFacilitatorClient` from `@x402/core/server`
-- [ ] Uses `ExactEvmScheme` from `@x402/evm/exact/server` (server-side, not client-side)
-- [ ] 3 endpoints: `/data` ($0.01), `/news` ($0.005), `/bulk-data` ($10)
-- [ ] `payTo` is `appConfig.mockReceiverAddress`
-- [ ] Network is `"eip155:84532"` (Base Sepolia)
-- [ ] Returns real data after payment (not empty responses)
-- [ ] `scripts/test-payment.ts` — standalone test
-- [ ] Test 1: Verifies 402 response structure (works without funding)
-- [ ] Test 2: Verifies paid request flow (requires funded wallet)
-- [ ] Prints Basescan link for settlement tx
-- [ ] `src/demo/agent-sim.ts` — exercises 5 use cases
-- [ ] Sends requests to gateway (port 3000), not directly to mock server
-- [ ] Displays results clearly for the video demo
-- [ ] All operations log via `logger.payment()`
-- [ ] No modifications to any file outside your scope
-- [ ] TypeScript compiles with `strict: true`
+- [x] `src/core/payment.ts` — `createPaymentFetch(key)` returns a working fetch wrapper
+- [x] Uses `wrapFetchWithPaymentFromConfig` (NOT the fake `createX402Fetch` from TASKS.md)
+- [x] Uses `ExactEvmScheme` from `@x402/evm/exact/client` (client-side, not server-side)
+- [x] Uses `toClientEvmSigner` to adapt viem account
+- [x] Logs via `logger.payment()`
+- [x] `src/mock/x402-server.ts` — starts on port 4021
+- [x] Uses `paymentMiddleware` from `@x402/express` (real middleware, NOT a stub)
+- [x] Uses `HTTPFacilitatorClient` from `@x402/core/server`
+- [x] Uses `ExactEvmScheme` from `@x402/evm/exact/server` (server-side, not client-side)
+- [x] 3 endpoints: `/data` ($0.01), `/news` ($0.005), `/bulk-data` ($10)
+- [x] `payTo` is `appConfig.mockReceiverAddress`
+- [x] Network is `"eip155:84532"` (Base Sepolia)
+- [x] Returns real data after payment (not empty responses)
+- [x] `scripts/test-payment.ts` — standalone test
+- [x] Test 1: Verifies 402 response structure (works without funding)
+- [x] Test 2: Verifies paid request flow (requires funded wallet)
+- [ ] Prints Basescan link for settlement tx (header present but base64 — needs decode)
+- [x] `src/demo/agent-sim.ts` — exercises 5 use cases
+- [x] Sends requests to gateway (port 3000), not directly to mock server
+- [x] Displays results clearly for the video demo
+- [x] All operations log via `logger.payment()`
+- [x] No modifications to any file outside your scope
+- [x] TypeScript compiles with `strict: true`
