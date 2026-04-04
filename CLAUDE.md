@@ -16,7 +16,7 @@ SecretPay est un **middleware backend Node.js/TypeScript** qui s'intercale entre
 - **Serveur** : Express (port 3000)
 - **Blockchain** : viem — Base Sepolia uniquement (chain ID 84532)
 - **Privacy** : `@unlink-xyz/sdk` — pool ZK, burner wallets jetables
-- **Paiements** : `@x402/fetch` + `@x402/evm` + `@x402/core` + `@x402/server`
+- **Paiements** : `@x402/fetch` + `@x402/evm` + `@x402/core` + `@x402/express`
 - **Hardware** : `@ledgerhq/device-management-kit` + `@ledgerhq/device-signer-kit-ethereum`
 - **Package manager** : pnpm
 
@@ -36,6 +36,7 @@ SecretPay est un **middleware backend Node.js/TypeScript** qui s'intercale entre
 ## Variables d'environnement (`.env`)
 
 ```env
+EVM_PRIVATE_KEY=         # 0x... private key of the EVM wallet holding USDC
 UNLINK_API_KEY=          # https://hackaton-apikey.vercel.app/
 AGENT_MNEMONIC=          # BIP-39 mnemonic du wallet agent
 BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
@@ -60,10 +61,10 @@ src/
 │   └── health.ts              # GET /health
 ├── core/
 │   ├── gateway.ts             # Chef d'orchestre du flow de paiement
-│   ├── policy.ts              # Policy Engine : auto / ledger / denied
+│   ├── policy.ts              # Policy Engine : auto / ledger / denied (Dev 4 — en cours)
 │   ├── privacy.ts             # Unlink SDK : deposit, withdraw vers burner
 │   ├── payment.ts             # x402 client : createX402Fetch(burnerKey)
-│   └── ledger.ts              # Ledger DMK : connect, requestApproval, disconnect
+│   └── ledger.ts              # Ledger DMK : connect, requestApproval, disconnect (Dev 4 — en cours)
 ├── utils/
 │   ├── burner.ts              # generatePrivateKey() + privateKeyToAccount() (viem)
 │   ├── config.ts              # Chargement .env + validation
@@ -76,6 +77,10 @@ src/
 │   └── x402-server.ts         # API payante simulée (port 4021)
 └── demo/
     └── agent-sim.ts           # Script qui enchaîne les 5 use cases
+scripts/
+├── test-gateway.ts            # Test audit du gateway (24 tests)
+├── test-privacy.ts            # Test standalone privacy module
+└── test-payment.ts            # Test standalone payment module
 ```
 
 ---
@@ -99,12 +104,14 @@ src/
 1. Proxy HTTP vers l'URL cible
 2. Si 200 → retourner directement
 3. Si 402 → extraire prix + destinataire
+   Note : le header x402 PAYMENT-REQUIRED est en base64 — décoder avant de parser le JSON
 4. policy.evaluate(prix, destinataire) → auto | ledger | denied
 5. Si denied → retourner 403
 6. Si ledger → ledger.requestApproval() → attendre approve/reject
 7. privacy.withdrawToBurner(montant) → { address, privateKey }
 8. payment.createX402Fetch(burnerPrivateKey) → fetch wrapper
 9. Retenter la requête → l'API sert les données
+   Note : le txHash est extrait du header PAYMENT-RESPONSE (aussi base64) dans la réponse 200
 10. Stocker PaymentRecord + retourner à l'agent
 ```
 
@@ -174,6 +181,11 @@ pnpm dev
 
 # Terminal 3 — Demo agent
 pnpm tsx src/demo/agent-sim.ts
+
+# Tests standalone par module
+pnpm tsx scripts/test-gateway.ts
+pnpm tsx scripts/test-privacy.ts
+pnpm tsx scripts/test-payment.ts    # nécessite mock server running
 ```
 
 ---
