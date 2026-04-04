@@ -1,1 +1,0 @@
-# ETH-Global-Cannes26
