@@ -41,12 +41,31 @@ const stubPrivacy: PrivacyRouter = {
 };
 
 const stubPolicy: PolicyEngine = {
-  evaluate(amount: number, _recipient: string): PolicyDecision {
-    if (amount > 5) return "ledger";
+  _dailySpent: 0,
+  _lastReset: new Date().toDateString(),
+  evaluate(amount: number, recipient: string): PolicyDecision {
+    // Reset daily counter at UTC midnight
+    const today = new Date().toDateString();
+    if (this._lastReset !== today) {
+      this._dailySpent = 0;
+      this._lastReset = today;
+    }
+    // Blacklist
+    const blacklist = ["0xBLACKLISTED0000000000000000000000000000"];
+    if (blacklist.includes(recipient)) return "denied";
+    // Hard cap
+    if (amount > 100) return "denied";
+    // Daily budget exceeded ($50)
+    if (this._dailySpent + amount > 50) return "ledger";
+    // >= 1 USDC → ledger
+    if (amount >= 1) return "ledger";
+    // Small amounts → auto
     return "auto";
   },
-  recordSpending(_amount: number) {},
-};
+  recordSpending(amount: number) {
+    this._dailySpent += amount;
+  },
+} as PolicyEngine & { _dailySpent: number; _lastReset: string };
 
 const stubLedger: LedgerBridge = {
   async requestApproval(details) {
