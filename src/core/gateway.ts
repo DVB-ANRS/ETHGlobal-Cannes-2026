@@ -97,7 +97,10 @@ export class Gateway {
     return this.privacy.getBalance();
   }
 
-  async handleRequest(agentReq: AgentRequest): Promise<AgentResponse> {
+  async handleRequest(agentReq: AgentRequest, opts?: {
+    agentAddress?: string;
+    withdrawFn?: (amount: string) => Promise<{ address: string; privateKey: `0x${string}` }>;
+  }): Promise<AgentResponse> {
     const { url, method = "GET", headers = {}, body } = agentReq;
     logger.gateway(`Received request for ${url}`);
 
@@ -191,7 +194,9 @@ export class Gateway {
     let burnerAddress: string;
     let burnerPrivateKey: `0x${string}`;
     try {
-      const burner = await this.privacy.withdrawToBurner(amount);
+      // Use per-agent vault if available, otherwise default privacy router
+      const withdrawFunc = opts?.withdrawFn ?? ((amt: string) => this.privacy.withdrawToBurner(amt));
+      const burner = await withdrawFunc(amount);
       burnerAddress = burner.address;
       burnerPrivateKey = burner.privateKey;
       logger.privacy(`Burner ${burnerAddress.slice(0, 10)}... funded with $${amount}`);
