@@ -201,6 +201,12 @@ export class Gateway {
     }
 
     // ── Step 9 : Record the payment ──
+    // Extract txHash from PAYMENT-RESPONSE header (base64 JSON with { transaction, ... })
+    const txHash = this.parsePaymentResponse(paidResponse);
+    if (txHash) {
+      logger.payment(`txHash: ${txHash}`);
+    }
+
     let data: unknown;
     try {
       data = await paidResponse.json();
@@ -218,7 +224,7 @@ export class Gateway {
       recipient,
       burner: burnerAddress,
       policy: decision,
-      txHash: undefined, // will be enriched when real modules provide it
+      txHash,
     };
     this.paymentHistory.push(record);
 
@@ -233,33 +239,42 @@ export class Gateway {
         recipient,
         burner: burnerAddress,
         policy: decision === "auto" ? "auto-approve" : "ledger-approved",
-        txHash: record.txHash,
+        txHash,
       },
     };
   }
 
   // ── Parse 402 response to extract price & recipient ──
   private parse402(response: Response): { amount: string | null; recipient: string | null } {
-    // x402 puts a base64-encoded JSON in the "X-PAYMENT" or "PAYMENT-REQUIRED" header
-    // The body also contains the PaymentRequired JSON
-    // We try the header first, then fall back to known structures
-
+    // x402 sets header "PAYMENT-REQUIRED" = base64(JSON)
+    // Structure: { x402Version: 2, accepts: [{ maxAmountRequired, payTo, ... }] }
     const headerRaw = response.headers.get("X-PAYMENT") ?? response.headers.get("PAYMENT-REQUIRED");
     if (headerRaw) {
       try {
         const decoded = JSON.parse(Buffer.from(headerRaw, "base64").toString("utf-8"));
-        // v2 structure: { x402Version: 2, accepts: [{ maxAmountRequired, payTo, ... }] }
-        // v1 structure: { x402Version: 1, accepts: [{ maxAmountRequired, payTo, ... }] }
         const first = decoded.accepts?.[0];
         if (first) {
           return { amount: first.maxAmountRequired, recipient: first.payTo };
         }
       } catch {
-        // header wasn't valid base64 JSON, try body below
+        // not valid base64 JSON
       }
     }
-
     return { amount: null, recipient: null };
+  }
+
+  // ── Parse 200 response to extract txHash from PAYMENT-RESPONSE header ──
+  private parsePaymentResponse(response: Response): string | undefined {
+    // x402 sets header "PAYMENT-RESPONSE" = base64(JSON)
+    // Structure: { transaction: "0x...", network: "...", success: true }
+    const headerRaw = response.headers.get("PAYMENT-RESPONSE") ?? response.headers.get("X-PAYMENT-RESPONSE");
+    if (!headerRaw) return undefined;
+    try {
+      const decoded = JSON.parse(Buffer.from(headerRaw, "base64").toString("utf-8"));
+      return decoded.transaction ?? undefined;
+    } catch {
+      return undefined;
+    }
   }
 }
 
