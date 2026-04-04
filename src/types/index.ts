@@ -31,6 +31,7 @@ export interface PaymentRecord {
   recipient: string;
   burner: string;
   policy: PolicyDecision;
+  status: 'pending' | 'approved' | 'rejected' | 'denied';
   txHash?: string;
 }
 

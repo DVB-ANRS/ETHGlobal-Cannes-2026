@@ -1,6 +1,11 @@
 import { Router } from "express";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 import type { AgentRequest } from "../types/index.js";
 import { gateway } from "../core/gateway.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const router = Router();
 
@@ -31,6 +36,15 @@ router.get("/agent/balance", async (_req, res) => {
 
 router.get("/agent/history", (_req, res) => {
   res.json({ payments: gateway.getHistory() });
+});
+
+router.get("/agent/policy", (_req, res) => {
+  try {
+    const raw = readFileSync(join(__dirname, "../config/policy.json"), "utf-8");
+    res.json(JSON.parse(raw));
+  } catch {
+    res.json({ maxPerTransaction: 5, maxPerDay: 50, allowedRecipients: [], blockedRecipients: [] });
+  }
 });
 
 export default router;
