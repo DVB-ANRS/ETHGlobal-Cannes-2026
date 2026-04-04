@@ -241,3 +241,77 @@ GET  /health          → { status: "ok" }
 ## Pitch 30 secondes
 
 > "Chaque fois qu'un AI agent paie pour un service, le monde entier voit combien, à qui, et à quelle fréquence. C'est comme publier votre relevé bancaire sur Twitter. SecretPay résout ça : les agents paient en USDC via le protocole x402, les transactions passent par un privacy pool Unlink via des burner wallets jetables, et les dépenses critiques sont approuvées physiquement sur un Ledger. Privacy pour les agents, contrôle pour les humains."
+
+---
+
+## Implementation Status
+
+### Module Status
+
+| Module | Dev | Status | Test Script |
+|--------|-----|--------|-------------|
+| **Gateway** (`src/core/gateway.ts`) | Dev 1 @backend | Functional — full 10-step flow with injectable DI stubs. 24/24 tests passing. | `scripts/test-gateway.ts` |
+| **Privacy** (`src/core/privacy.ts`, `src/utils/burner.ts`) | Dev 2 @privacy | Functional — real `@unlink-xyz/sdk` integration (deposit, withdraw, getBalance). Burner wallet generation via viem. | `scripts/test-privacy.ts` |
+| **Payment** (`src/core/payment.ts`, `src/mock/x402-server.ts`) | Dev 3 @payment | Functional — real `@x402/fetch` + `@x402/express`. Mock server with 3 priced endpoints. Payment fetch wrapper with EIP-3009 support. | `scripts/test-payment.ts` |
+| **Demo** (`src/demo/agent-sim.ts`) | Dev 3 @payment | Functional — exercises all 5 use cases via POST /agent/request. | N/A (run manually) |
+| **Policy** (`src/core/policy.ts`) | Dev 4 @trust | **NOT DELIVERED** — gateway uses inline stub (auto <$5, ledger >$5). | — |
+| **Ledger** (`src/core/ledger.ts`) | Dev 4 @trust | **NOT DELIVERED** — gateway uses stub that auto-approves. | — |
+
+### Technical Discoveries
+
+#### x402 SDK (v2.9.0) — Key Differences from TASKS.md
+
+- **Import names differ**: use `wrapFetchWithPaymentFromConfig` (not `createX402Fetch`), `ExactEvmScheme` + `toClientEvmSigner`
+- **Client vs Server `ExactEvmScheme`**: `@x402/evm/exact/client` vs `@x402/evm/exact/server` — different classes, do NOT mix
+- **402 header is base64-encoded**: `PAYMENT-REQUIRED` header contains base64(JSON) with `{ x402Version, accepts: [{ amount, payTo, asset, ... }] }`
+- **Amount in raw units**: The `amount` field in 402 headers is in token base units (USDC = 6 decimals). Gateway's `parse402()` converts raw → human-readable (e.g. `"10000"` → `"0.01"`)
+- **Settlement response**: 200 responses include `PAYMENT-RESPONSE` header (base64 JSON) with `{ transaction: "0x..." }` — the settlement txHash on Basescan
+- **Facilitator URL**: `https://x402.org/facilitator` — used by mock server for payment verification/settlement
+- **`paymentMiddleware` signature**: `paymentMiddleware(routes, resourceServer, { testnet: true }, undefined, true)` — 5th param enables facilitator sync on startup
+
+#### Unlink SDK (v0.0.2-canary.0) — Key Differences from TASKS.md
+
+- **`createUnlink()` requires full config**: `{ engineUrl, apiKey, account: unlinkAccount.fromMnemonic({ mnemonic }), evm: unlinkEvm.fromViem({ walletClient, publicClient }) }`
+- **Engine URL**: `https://staging-api.unlink.xyz` (hardcoded in privacy.ts)
+- **Must call `ensureRegistered()`** before any operation
+- **Must call `ensureErc20Approval()`** before first deposit (Permit2)
+- **Token is ERC-20 address** not string "USDC": `"0x036CbD53842c5426634e7929541eC2318f3dCF7e"`
+- **Amounts in wei** (6 decimals for USDC): use `parseUnits`/`formatUnits` from viem
+- **`withdraw()` uses `recipientEvmAddress`** not `to`
+- **Transaction polling**: `pollTransactionStatus(txId, { timeoutMs })` — terminal states: `"relayed"`, `"processed"`, `"failed"`
+
+### Wallet Setup (.env)
+
+Two separate wallets are required:
+
+| Variable | Role | Description |
+|----------|------|-------------|
+| `EVM_PRIVATE_KEY` | Agent/Payer wallet | Funds the privacy pool, used as fallback payer. Needs Base Sepolia ETH (gas) + USDC. |
+| `AGENT_MNEMONIC` | Unlink account | BIP-39 mnemonic for Unlink SDK (EdDSA signing for withdrawals). |
+| `MOCK_RECEIVER_ADDRESS` | Receiver wallet | Dedicated address for the mock x402 server's `payTo`. |
+| `MOCK_RECEIVER_PRIVATE_KEY` | Receiver key | Private key of the receiver (used by facilitator for settlement). |
+
+**Important**: The agent (payer) and mock receiver must be **different wallets**. Using the same wallet for both causes facilitator settlement to fail.
+
+### Gateway Integration Status
+
+- Privacy module wired into gateway with graceful fallback if env vars are missing
+- Payment module (`createPaymentFetch`) wired — gateway creates x402 fetch wrapper with burner key
+- Gateway parses 402 headers (base64 decode) and extracts `amount` (raw→USDC) + `payTo`
+- Gateway extracts `txHash` from `PAYMENT-RESPONSE` header on successful 200 responses
+- Policy and Ledger still use stubs — pending Dev 4 delivery
+
+### What's Missing (Dev 4 @trust)
+
+- `src/core/policy.ts` — PolicyEngine with auto/ledger/denied logic based on amount thresholds, daily budget, blacklist
+- `src/core/ledger.ts` — Ledger hardware bridge (WebHID/BLE or terminal mock)
+- `src/config/policy.json` — exists with defaults but no engine to consume it
+- **Impact**: UC2 (ledger approve), UC3 (ledger reject), UC4 (budget exhaustion), UC5 (blacklist) rely on policy/ledger — currently handled by gateway stubs
+- **Gateway stubs behavior**: amount >$5 → "ledger" (auto-approved by stub), otherwise → "auto". No blacklist check.
+
+### Remaining Coordination Points
+
+- **UC4 (budget exhaustion)**: Requires real PolicyEngine with `dailySpent` tracking + `maxPerDay` threshold
+- **UC5 (blacklist)**: Requires `blockedRecipients` in policy.json + PolicyEngine check
+- **Demo script** (`agent-sim.ts`): UC2/UC3 print "Press APPROVE/REJECT on Ledger" — needs real Ledger bridge or terminal mock
+- **Server startup**: `server.ts` calls `privacyRouter.init()` — needs `EVM_PRIVATE_KEY` and `UNLINK_API_KEY` in `.env`
