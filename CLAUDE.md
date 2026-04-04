@@ -43,8 +43,9 @@ MOCK_SERVER_PORT=4021
 MOCK_RECEIVER_ADDRESS=   # Adresse receiver du mock server
 MOCK_RECEIVER_PRIVATE_KEY=
 GATEWAY_PORT=3000
-DEFAULT_MAX_PER_TX=5
-DEFAULT_MAX_PER_DAY=50
+DEFAULT_MAX_PER_TX=2
+DEFAULT_MAX_PER_DAY=10
+BACKUP_BURNER_PRIVATE_KEY=  # Optionnel — wallet de backup qui fund les burners en parallèle du pool Unlink
 LEDGER_ORIGIN_TOKEN=     # Optionnel
 ```
 
@@ -65,13 +66,13 @@ src/
 │   ├── payment.ts             # x402 client : createX402Fetch(burnerKey)
 │   └── ledger.ts              # Ledger DMK : connect, requestApproval, disconnect
 ├── utils/
-│   ├── burner.ts              # generatePrivateKey() + privateKeyToAccount() (viem)
+│   ├── burner.ts              # generateBurner() + fundBurnerFromBackup() (viem ERC-20 transfer)
 │   ├── config.ts              # Chargement .env + validation
 │   └── logger.ts              # Logs colorés pour la demo
 ├── types/
 │   └── index.ts               # AgentRequest, AgentResponse, PaymentRecord, PolicyDecision
 ├── config/
-│   └── policy.json            # maxPerTransaction:5, maxPerDay:50, blacklist:[]
+│   └── policy.json            # maxPerTransaction:2, maxPerDay:10, floor:0.1, blacklist:[]
 ├── mock/
 │   └── x402-server.ts         # API payante simulée (port 4021)
 └── demo/
@@ -102,7 +103,7 @@ src/
 4. policy.evaluate(prix, destinataire) → auto | ledger | denied
 5. Si denied → retourner 403
 6. Si ledger → ledger.requestApproval() → attendre approve/reject
-7. privacy.withdrawToBurner(montant) → { address, privateKey }
+7. privacy.withdrawToBurner(montant) → funding parallèle (voir ci-dessous)
 8. payment.createX402Fetch(burnerPrivateKey) → fetch wrapper
 9. Retenter la requête → l'API sert les données
 10. Stocker PaymentRecord + retourner à l'agent
@@ -110,23 +111,61 @@ src/
 
 ---
 
+## Parallel Burner Funding (privacy.ts + burner.ts)
+
+Le burner wallet est **toujours frais et jetable** — c'est lui qui signe le paiement x402, jamais le backup wallet.
+
+Le problème : le withdraw Unlink (pool ZK → burner) peut être lent sur Base Sepolia. Pour garantir que le burner a des fonds, on lance **deux transferts en parallèle** vers le même burner :
+
+```
+withdrawToBurner(amount)
+  1. generateBurner() → fresh burner { address, privateKey }
+  2. Promise.allSettled([
+       Path A: Unlink pool → burner   (withdraw ZK, peut prendre >30s)
+       Path B: Backup wallet → burner  (ERC-20 transfer direct, ~3s)
+     ])
+  3. Au moins un doit réussir, sinon erreur
+  4. Return { address, privateKey } du fresh burner
+```
+
+- **Path A** (Unlink) : `client.withdraw()` + `pollTransactionStatus()` — important pour la privacy proof (track sponsor)
+- **Path B** (Backup) : `fundBurnerFromBackup()` dans `burner.ts` — simple `walletClient.writeContract()` ERC-20 `transfer(burnerAddress, amount)` depuis `BACKUP_BURNER_PRIVATE_KEY`
+- Si `BACKUP_BURNER_PRIVATE_KEY` n'est pas configuré, seul le path Unlink tourne (comportement original)
+- Si les deux réussissent, le burner a 2× le montant — acceptable pour un hackathon
+- Le backup wallet **n'est jamais passé à `createPaymentFetch()`** — seule la clé du fresh burner est utilisée pour signer
+
+---
+
 ## Policy Engine (policy.json)
 
 ```json
 {
-  "maxPerTransaction": 5,
-  "maxPerDay": 50,
+  "maxPerTransaction": 2,
+  "maxPerDay": 10,
   "allowedRecipients": [],
   "blockedRecipients": []
 }
 ```
 
-Logique :
-- recipient blacklisté → `"denied"`
-- amount > $100 (hard cap) → `"denied"`
-- dépense jour > maxPerDay → `"ledger"`
-- amount > maxPerTransaction → `"ledger"`
-- sinon → `"auto"`
+### Seuils de transaction (en USDC)
+
+| Paramètre | Valeur | Effet |
+|-----------|--------|-------|
+| Floor (minimum) | $0.10 | En dessous → `"denied"` |
+| Cap / hard cap | $2.00 | Au dessus → `"denied"` |
+| Seuil Ledger | $1.00 | `>= $1` → `"ledger"` (approbation hardware) |
+| Budget journalier | $10.00 | Cumul jour > $10 → `"ledger"` |
+
+### Logique d'évaluation (ordre de priorité)
+
+```
+if amount < 0.10          → "denied" (en dessous du minimum)
+if amount > 2.00          → "denied" (au dessus du cap)
+if recipient blacklisté   → "denied"
+if amount >= 1.00         → "ledger"
+if dailySpend + amount > 10 → "ledger"
+else                       → "auto"
+```
 
 ---
 
@@ -134,10 +173,10 @@ Logique :
 
 | # | Scénario | Endpoint mock | Prix | Résultat attendu |
 |---|----------|--------------|------|-----------------|
-| 1 | Auto-approve | `GET /data` | $0.01 | 200 + log AUTO-APPROVE |
-| 2 | Ledger approve | `GET /bulk-data` | $10 | Ledger prompt → approve → 200 |
-| 3 | Ledger reject | `GET /bulk-data` | $10 | Ledger prompt → reject → 403 |
-| 4 | Budget jour | 50× `/data` | $0.01×50 | Bascule en "ledger" à $50 |
+| 1 | Auto-approve | `GET /data` | $0.10 | 200 + log AUTO-APPROVE |
+| 2 | Ledger approve | `GET /bulk-data` | $1.50 | Ledger prompt → approve → 200 |
+| 3 | Ledger reject | `GET /bulk-data` | $1.50 | Ledger prompt → reject → 403 |
+| 4 | Budget jour | 20× `/budget-data` | $0.50×20 | Bascule en "ledger" à $10 |
 | 5 | Blacklist | URL blacklistée | - | 403 "denied" immédiat |
 
 ---
@@ -206,7 +245,8 @@ GET  /health          → { status: "ok" }
 | Unlink SDK bloqué | Simuler le pool : transfers directs viem + documenter le workaround |
 | x402 facilitator down | Self-host depuis le repo coinbase/x402 |
 | Ledger USB instable | BLE → Speculos (simulateur) → montrer le code dans la vidéo |
-| Withdraw trop lent | Pré-fund 3-5 burners en avance (pool de burners) |
+| Withdraw trop lent | Parallel funding : backup wallet envoie USDC au burner en même temps que le pool Unlink |
+| Réseau saturé | Même mécanisme — le transfert direct backup→burner passe même si le pool est lent |
 | Flow E2E cassé à H14 | Scope réduit : juste auto-approve. Ledger = demo séparée |
 
 ---
@@ -230,8 +270,8 @@ GET  /health          → { status: "ok" }
 |-------|---------|
 | 0:00-0:25 | Problème : Basescan montre tout (wallet public) |
 | 0:25-0:50 | Solution : schéma archi SecretPay |
-| 0:50-1:20 | Demo auto-approve $0.01 — logs en direct |
-| 1:20-2:00 | Demo Ledger $10 — device à la caméra, approve physique |
+| 0:50-1:20 | Demo auto-approve $0.10 — logs en direct |
+| 1:20-2:00 | Demo Ledger $1.50 — device à la caméra, approve physique |
 | 2:00-2:15 | Demo blacklist — refus instantané |
 | 2:15-2:45 | Preuve onchain : Basescan, burners différents, non-reliables |
 | 2:45-3:00 | Closing pitch |

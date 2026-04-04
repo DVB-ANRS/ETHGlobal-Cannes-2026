@@ -41,12 +41,18 @@ const stubPrivacy: PrivacyRouter = {
 };
 
 const stubPolicy: PolicyEngine = {
+  _dailySpend: 0,
   evaluate(amount: number, _recipient: string): PolicyDecision {
-    if (amount > 5) return "ledger";
+    if (amount < 0.1) return "denied";
+    if (amount > 2) return "denied";
+    if (amount >= 1) return "ledger";
+    if (this._dailySpend + amount > 10) return "ledger";
     return "auto";
   },
-  recordSpending(_amount: number) {},
-};
+  recordSpending(amount: number) {
+    this._dailySpend += amount;
+  },
+} as PolicyEngine & { _dailySpend: number };
 
 const stubLedger: LedgerBridge = {
   async requestApproval(details) {
@@ -97,7 +103,10 @@ export class Gateway {
     return this.privacy.getBalance();
   }
 
-  async handleRequest(agentReq: AgentRequest): Promise<AgentResponse> {
+  async handleRequest(agentReq: AgentRequest, opts?: {
+    agentAddress?: string;
+    withdrawFn?: (amount: string) => Promise<{ address: string; privateKey: `0x${string}` }>;
+  }): Promise<AgentResponse> {
     const { url, method = "GET", headers = {}, body } = agentReq;
     logger.gateway(`Received request for ${url}`);
 
@@ -154,7 +163,7 @@ export class Gateway {
         policy: "denied",
         status: "denied",
       });
-      return { status: 403, error: "Payment denied by policy", reason: "Recipient is blacklisted or amount exceeds hard cap" };
+      return { status: 403, error: "Payment denied by policy", reason: amountNum < 0.1 ? "Amount below minimum ($0.10)" : "Recipient is blacklisted or amount exceeds cap ($2)" };
     }
 
     // Ledger: push pending record immediately so dashboard shows it while waiting
@@ -191,7 +200,9 @@ export class Gateway {
     let burnerAddress: string;
     let burnerPrivateKey: `0x${string}`;
     try {
-      const burner = await this.privacy.withdrawToBurner(amount);
+      // Use per-agent vault if available, otherwise default privacy router
+      const withdrawFunc = opts?.withdrawFn ?? ((amt: string) => this.privacy.withdrawToBurner(amt));
+      const burner = await withdrawFunc(amount);
       burnerAddress = burner.address;
       burnerPrivateKey = burner.privateKey;
       logger.privacy(`Burner ${burnerAddress.slice(0, 10)}... funded with $${amount}`);
