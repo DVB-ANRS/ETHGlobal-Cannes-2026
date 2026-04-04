@@ -7,6 +7,7 @@
     "dev": "tsx src/server.ts",
     "mock": "tsx src/mock/x402-server.ts",
     "demo": "tsx src/demo/agent-sim.ts",
+    "dashboard": "tsx src/dashboard/serve.ts",
     "build": "tsc"
   },
   "keywords": [],
@@ -26,12 +27,14 @@
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "tsx": "^4.21.0",
-    "viem": "^2.47.10"
+    "viem": "^2.47.10",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.2",
+    "@types/ws": "^8.18.1",
     "typescript": "^6.0.2"
   }
 }

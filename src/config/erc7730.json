@@ -1,0 +1,45 @@
+{
+  "$schema": "https://erc7730.org/schema/v1.json",
+  "context": {
+    "eip712": {
+      "domain": {
+        "name": "SecretPay",
+        "version": "1",
+        "chainId": 84532,
+        "verifyingContract": "0x0000000000000000000000000000000000000000"
+      },
+      "schemas": [
+        {
+          "primaryType": "AgentPayment",
+          "types": {
+            "EIP712Domain": [
+              { "name": "name", "type": "string" },
+              { "name": "version", "type": "string" },
+              { "name": "chainId", "type": "uint256" },
+              { "name": "verifyingContract", "type": "address" }
+            ],
+            "AgentPayment": [
+              { "name": "amount", "type": "string" },
+              { "name": "currency", "type": "string" },
+              { "name": "recipient", "type": "address" },
+              { "name": "service", "type": "string" }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "display": {
+    "formats": {
+      "AgentPayment": {
+        "intent": "Approve AI Agent Payment",
+        "fields": [
+          { "path": "amount", "label": "Amount", "format": "raw" },
+          { "path": "currency", "label": "Currency", "format": "raw" },
+          { "path": "recipient", "label": "Recipient", "format": "addressName" },
+          { "path": "service", "label": "Service", "format": "raw" }
+        ]
+      }
+    }
+  }
+}

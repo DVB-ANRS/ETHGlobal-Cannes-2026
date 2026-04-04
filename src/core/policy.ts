@@ -22,6 +22,11 @@ class PolicyEngine {
   evaluate(amount: number, recipient: string): PolicyDecision {
     this.checkDailyReset()
 
+    if (amount <= 0) {
+      logger.policy(`$${amount} → DENIED (invalid amount)`)
+      return "denied"
+    }
+
     const recipientLower = recipient.toLowerCase()
 
     if (this.config.blockedRecipients.some(a => a.toLowerCase() === recipientLower)) {

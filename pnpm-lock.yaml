@@ -47,6 +47,9 @@ importers:
       viem:
         specifier: ^2.47.10
         version: 2.47.10(typescript@6.0.2)(zod@3.25.76)
+      ws:
+        specifier: ^8.20.0
+        version: 8.20.0
     devDependencies:
       '@types/cors':
         specifier: ^2.8.19
@@ -57,6 +60,9 @@ importers:
       '@types/node':
         specifier: ^25.5.2
         version: 25.5.2
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       typescript:
         specifier: ^6.0.2
         version: 6.0.2
@@ -378,6 +384,9 @@ packages:
 
   '@types/serve-static@2.2.0':
     resolution: {integrity: sha512-8mam4H1NHLtu7nmtalF7eyBH14QyOASmcxHhSfEoRyr0nP/YdoesEtU+uSRvMe96TW/HPTtkoKqQLl53N7UXMQ==}
+
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
   '@unlink-xyz/sdk@0.0.2-canary.0':
     resolution: {integrity: sha512-IHhDzkc3mXPyw4AjIZ88x6wBZfIUEhAZTVuBWTVolVndWPilS7HeC4RKmDJNhAo8OU+yT/jFIp/FGyT4bPkTBA==}
@@ -930,6 +939,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.20.0:
+    resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xstate@5.19.2:
     resolution: {integrity: sha512-B8fL2aP0ogn5aviAXFzI5oZseAMqN00fg/TeDa3ZtatyDcViYLIfuQl4y8qmHCiKZgGEzmnTyNtNQL9oeJE2gw==}
 
@@ -1065,14 +1086,14 @@ snapshots:
       '@sentry/minimal': 6.19.7
       axios: 1.13.5
       inversify: 7.5.1(reflect-metadata@0.2.2)
-      isomorphic-ws: 5.0.0(ws@8.18.3)
+      isomorphic-ws: 5.0.0(ws@8.20.0)
       purify-ts: 2.1.0
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
       semver: 7.7.2
       url: 0.11.4
       uuid: 11.0.3
-      ws: 8.18.3
+      ws: 8.20.0
       xstate: 5.19.2
     transitivePeerDependencies:
       - bufferutil
@@ -1231,6 +1252,10 @@ snapshots:
   '@types/serve-static@2.2.0':
     dependencies:
       '@types/http-errors': 2.0.5
+      '@types/node': 25.5.2
+
+  '@types/ws@8.18.1':
+    dependencies:
       '@types/node': 25.5.2
 
   '@unlink-xyz/sdk@0.0.2-canary.0(typescript@6.0.2)(zod@3.25.76)':
@@ -1615,9 +1640,9 @@ snapshots:
 
   is-promise@4.0.0: {}
 
-  isomorphic-ws@5.0.0(ws@8.18.3):
+  isomorphic-ws@5.0.0(ws@8.20.0):
     dependencies:
-      ws: 8.18.3
+      ws: 8.20.0
 
   isows@1.0.7(ws@8.18.3):
     dependencies:
@@ -1873,6 +1898,8 @@ snapshots:
   ws@8.17.1: {}
 
   ws@8.18.3: {}
+
+  ws@8.20.0: {}
 
   xstate@5.19.2: {}
 

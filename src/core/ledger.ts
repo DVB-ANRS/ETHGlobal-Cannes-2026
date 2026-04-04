@@ -1,5 +1,7 @@
-import { createInterface } from "readline"
+import { WebSocketServer, WebSocket } from "ws"
 import { logger } from "../utils/logger.js"
+
+const LEDGER_WS_PORT = 3001
 
 interface ApprovalDetails {
   amount: string
@@ -7,49 +9,90 @@ interface ApprovalDetails {
   service: string
 }
 
-class LedgerBridge {
-  private connected = false
+interface WsMessage {
+  type: "approval_request" | "approval_response" | "status"
+  payload: Record<string, unknown>
+}
 
-  async connect(): Promise<void> {
-    this.connected = true
-    logger.ledger("Device connected (terminal mock)")
+class LedgerBridge {
+  private wss: WebSocketServer | null = null
+  private browserSocket: WebSocket | null = null
+  private pendingApproval: {
+    resolve: (result: "approved" | "rejected") => void
+  } | null = null
+
+  async start(): Promise<void> {
+    if (this.wss) return
+
+    this.wss = new WebSocketServer({ port: LEDGER_WS_PORT })
+
+    this.wss.on("connection", (ws) => {
+      logger.ledger("Dashboard connected via WebSocket")
+      this.browserSocket = ws
+
+      ws.on("message", (raw) => {
+        const msg = JSON.parse(raw.toString()) as WsMessage
+
+        if (msg.type === "approval_response" && this.pendingApproval) {
+          const approved = msg.payload.approved === true
+          logger.ledger(approved ? "✓ APPROVED on Ledger" : "✗ REJECTED on Ledger")
+          this.pendingApproval.resolve(approved ? "approved" : "rejected")
+          this.pendingApproval = null
+        }
+
+        if (msg.type === "status") {
+          logger.ledger(`Device: ${msg.payload.message}`)
+        }
+      })
+
+      ws.on("close", () => {
+        logger.ledger("Dashboard disconnected")
+        this.browserSocket = null
+        if (this.pendingApproval) {
+          this.pendingApproval.resolve("rejected")
+          this.pendingApproval = null
+        }
+      })
+    })
+
+    logger.ledger(`WebSocket server on :${LEDGER_WS_PORT} — open dashboard in browser`)
   }
 
   async requestApproval(details: ApprovalDetails): Promise<"approved" | "rejected"> {
-    if (!this.connected) await this.connect()
+    if (!this.browserSocket || this.browserSocket.readyState !== WebSocket.OPEN) {
+      logger.ledger("No dashboard connected — approval denied")
+      return "rejected"
+    }
 
     logger.ledger("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    logger.ledger(`  SecretPay — Approval Required`)
+    logger.ledger(`  Requesting approval on Ledger`)
     logger.ledger(`  Amount:    $${details.amount} USDC`)
     logger.ledger(`  Recipient: ${details.recipient}`)
     logger.ledger(`  Service:   ${details.service}`)
     logger.ledger("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-    const answer = await this.prompt("  Approve? [y/n] > ")
-    const approved = answer.trim().toLowerCase() === "y"
-
-    if (approved) {
-      logger.ledger("✓ APPROVED by operator")
-      return "approved"
-    } else {
-      logger.ledger("✗ REJECTED by operator")
-      return "rejected"
+    const msg: WsMessage = {
+      type: "approval_request",
+      payload: { ...details },
     }
-  }
+    this.browserSocket.send(JSON.stringify(msg))
 
-  async disconnect(): Promise<void> {
-    this.connected = false
-    logger.ledger("Device disconnected")
-  }
-
-  private prompt(question: string): Promise<string> {
-    const rl = createInterface({ input: process.stdin, output: process.stdout })
-    return new Promise(resolve => {
-      rl.question(question, answer => {
-        rl.close()
-        resolve(answer)
-      })
+    return new Promise((resolve) => {
+      this.pendingApproval = { resolve }
+      setTimeout(() => {
+        if (this.pendingApproval) {
+          logger.ledger("Approval timeout (60s) — rejected")
+          this.pendingApproval.resolve("rejected")
+          this.pendingApproval = null
+        }
+      }, 60_000)
     })
+  }
+
+  async stop(): Promise<void> {
+    this.wss?.close()
+    this.wss = null
+    this.browserSocket = null
   }
 }
 

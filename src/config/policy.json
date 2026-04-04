@@ -2,5 +2,5 @@
   "maxPerTransaction": 5,
   "maxPerDay": 50,
   "allowedRecipients": [],
-  "blockedRecipients": []
+  "blockedRecipients": ["0xShadyService000000000000000000000000dead"]
 }
