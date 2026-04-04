@@ -793,7 +793,7 @@ If the x402 facilitator is **completely non-functional** (API down, no testnet s
 
 2. **Facilitator URL `https://x402.org/facilitator` fonctionne** — pas besoin de self-host. Le facilitator gère la vérification et le settlement sur Base Sepolia.
 
-3. **Même wallet pour payer et receiver** — `MOCK_RECEIVER_ADDRESS` = `EVM_PUBLIC_KEY` = `0x723B1Abbad41507Ecd4Fa7D20670614F90665f4e`. Permet de tester sans perdre de fonds (USDC fait un aller-retour). Documenté dans `CLAUDEDEV2.md`.
+3. **Même wallet pour payer et receiver** — `MOCK_RECEIVER_ADDRESS` = `EVM_PUBLIC_KEY` = `0x723B1Abbad41507Ecd4Fa7D20670614F90665f4e`. Un seul wallet funded suffit pour le hackathon. En prod on séparerait payer et receiver. Impact nul sur le module privacy (le wallet agent via mnemonic est différent du receiver).
 
 4. **Prix en string `"$0.01"` marche** — le `ExactEvmScheme` server-side parse correctement les prix en string dollar. La conversion en units USDC (10000 pour $0.01) est automatique.
 
