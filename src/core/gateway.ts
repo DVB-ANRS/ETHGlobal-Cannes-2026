@@ -104,11 +104,15 @@ export class Gateway {
     // ── Step 1 : Proxy the request to the target URL ──
     let proxyResponse: Response;
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30_000);
       proxyResponse = await fetch(url, {
         method,
         headers: { ...headers },
         body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       logger.error(`Proxy request failed: ${msg}`);
@@ -119,10 +123,11 @@ export class Gateway {
     if (proxyResponse.status !== 402) {
       logger.gateway(`Got ${proxyResponse.status} — no payment needed`);
       let data: unknown;
+      const text = await proxyResponse.text();
       try {
-        data = await proxyResponse.json();
+        data = JSON.parse(text);
       } catch {
-        data = await proxyResponse.text();
+        data = text;
       }
       return { status: proxyResponse.status, data };
     }
@@ -182,11 +187,15 @@ export class Gateway {
     // ── Step 8 : Retry the request with payment ──
     let paidResponse: Response;
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30_000);
       paidResponse = await payFetch(url, {
         method,
         headers: { ...headers },
         body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       logger.error(`Paid request failed: ${msg}`);
@@ -196,7 +205,7 @@ export class Gateway {
     if (paidResponse.status !== 200) {
       logger.error(`Paid request returned ${paidResponse.status} instead of 200`);
       let errBody: unknown;
-      try { errBody = await paidResponse.json(); } catch { errBody = null; }
+      try { errBody = JSON.parse(await paidResponse.text()); } catch { errBody = null; }
       return { status: paidResponse.status, error: "Payment accepted but API returned error", data: errBody };
     }
 
@@ -208,10 +217,11 @@ export class Gateway {
     }
 
     let data: unknown;
+    const paidText = await paidResponse.text();
     try {
-      data = await paidResponse.json();
+      data = JSON.parse(paidText);
     } catch {
-      data = await paidResponse.text();
+      data = paidText;
     }
 
     this.policy.recordSpending(amountNum);
@@ -260,7 +270,7 @@ export class Gateway {
           const rawAmount: string = first.amount ?? first.maxAmountRequired;
           if (!rawAmount) return { amount: null, recipient: null };
           // Convert raw units → human-readable USD (e.g. "10000" → "0.01")
-          const amountUsdc = (parseInt(rawAmount) / 10 ** USDC_DECIMALS).toFixed(6).replace(/\.?0+$/, "");
+          const amountUsdc = (Number(rawAmount) / 10 ** USDC_DECIMALS).toFixed(6).replace(/\.?0+$/, "");
           return { amount: amountUsdc, recipient: first.payTo };
         }
       } catch {

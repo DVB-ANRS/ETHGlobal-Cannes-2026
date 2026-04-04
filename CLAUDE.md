@@ -8,6 +8,8 @@ Hackathon 36h. ~15h restantes. Deadline soumission : 5 avril 2026.
 
 SecretPay est un **middleware backend Node.js/TypeScript** qui s'intercale entre un AI agent et des APIs payantes (protocole x402). Il rend les paiements **privés** (via Unlink privacy pool + burner wallets) et **contrôlés** (approbation Ledger hardware sur gros montants).
 
+Un **frontend web** sera également développé (stack et design à définir). Il servira de dashboard pour visualiser et contrôler les opérations SecretPay (historique, balances, approbation Ledger, etc.).
+
 ---
 
 ## Stack technique
@@ -18,6 +20,7 @@ SecretPay est un **middleware backend Node.js/TypeScript** qui s'intercale entre
 - **Privacy** : `@unlink-xyz/sdk` — pool ZK, burner wallets jetables
 - **Paiements** : `@x402/fetch` + `@x402/evm` + `@x402/core` + `@x402/server`
 - **Hardware** : `@ledgerhq/device-management-kit` + `@ledgerhq/device-signer-kit-ethereum`
+- **Frontend** : À définir (framework, routing, state management — décision en cours)
 - **Package manager** : pnpm
 
 ---
@@ -195,7 +198,7 @@ GET  /health          → { status: "ok" }
 - Pas de tests unitaires — pas le temps. Focus sur le E2E.
 - Logs structurés dans chaque étape du gateway (pour la demo)
 - Aucun secret dans le repo (`.env` dans `.gitignore`)
-- Pas de dashboard tant que le E2E n'est pas solide
+- Un frontend (dashboard) sera développé — stack à définir par l'équipe
 
 ---
 
