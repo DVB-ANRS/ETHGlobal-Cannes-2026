@@ -247,14 +247,21 @@ export class Gateway {
   // ── Parse 402 response to extract price & recipient ──
   private parse402(response: Response): { amount: string | null; recipient: string | null } {
     // x402 sets header "PAYMENT-REQUIRED" = base64(JSON)
-    // Structure: { x402Version: 2, accepts: [{ maxAmountRequired, payTo, ... }] }
+    // v2 structure: { x402Version: 2, accepts: [{ amount (raw units), payTo, asset, ... }] }
+    // v1 structure: { x402Version: 1, accepts: [{ maxAmountRequired (raw units), payTo, ... }] }
+    // amount is in token base units (USDC = 6 decimals) → divide by 10^6 to get USD string
+    const USDC_DECIMALS = 6;
     const headerRaw = response.headers.get("X-PAYMENT") ?? response.headers.get("PAYMENT-REQUIRED");
     if (headerRaw) {
       try {
         const decoded = JSON.parse(Buffer.from(headerRaw, "base64").toString("utf-8"));
         const first = decoded.accepts?.[0];
         if (first) {
-          return { amount: first.maxAmountRequired, recipient: first.payTo };
+          const rawAmount: string = first.amount ?? first.maxAmountRequired;
+          if (!rawAmount) return { amount: null, recipient: null };
+          // Convert raw units → human-readable USD (e.g. "10000" → "0.01")
+          const amountUsdc = (parseInt(rawAmount) / 10 ** USDC_DECIMALS).toFixed(6).replace(/\.?0+$/, "");
+          return { amount: amountUsdc, recipient: first.payTo };
         }
       } catch {
         // not valid base64 JSON
