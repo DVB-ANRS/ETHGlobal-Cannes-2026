@@ -41,12 +41,18 @@ const stubPrivacy: PrivacyRouter = {
 };
 
 const stubPolicy: PolicyEngine = {
+  _dailySpend: 0,
   evaluate(amount: number, _recipient: string): PolicyDecision {
-    if (amount > 5) return "ledger";
+    if (amount < 0.1) return "denied";
+    if (amount > 2) return "denied";
+    if (amount >= 1) return "ledger";
+    if (this._dailySpend + amount > 10) return "ledger";
     return "auto";
   },
-  recordSpending(_amount: number) {},
-};
+  recordSpending(amount: number) {
+    this._dailySpend += amount;
+  },
+} as PolicyEngine & { _dailySpend: number };
 
 const stubLedger: LedgerBridge = {
   async requestApproval(details) {
@@ -157,7 +163,7 @@ export class Gateway {
         policy: "denied",
         status: "denied",
       });
-      return { status: 403, error: "Payment denied by policy", reason: "Recipient is blacklisted or amount exceeds hard cap" };
+      return { status: 403, error: "Payment denied by policy", reason: amountNum < 0.1 ? "Amount below minimum ($0.10)" : "Recipient is blacklisted or amount exceeds cap ($2)" };
     }
 
     // Ledger: push pending record immediately so dashboard shows it while waiting
