@@ -6,6 +6,7 @@ import { appConfig } from "./utils/config.js";
 import { logger } from "./utils/logger.js";
 import { gateway } from "./core/gateway.js";
 import { privacyRouter } from "./core/privacy.js";
+import { createPaymentFetch } from "./core/payment.js";
 
 const app = express();
 
@@ -35,6 +36,8 @@ async function start() {
     });
     gateway.setPrivacy(privacyRouter);
     logger.info("Privacy layer initialized ✓");
+    gateway.setPayment({ createPaymentFetch });
+    logger.info("Payment module wired ✓");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.error(`Privacy init failed: ${msg} — running with stub privacy`);
