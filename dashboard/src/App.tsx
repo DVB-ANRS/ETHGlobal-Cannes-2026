@@ -5,21 +5,26 @@ import Stats from './components/Stats'
 import TxFeed from './components/TxFeed'
 import SidePanel from './components/SidePanel'
 import Landing from './components/Landing'
+import AgentForm from './components/AgentForm'
+import AgentLive from './components/AgentLive'
+import type { AgentConfig } from './components/AgentForm'
 
 const POLL_MS = 2000
 
 const DEFAULT_POLICY: PolicyConfig = {
-  maxPerTransaction: 5,
-  maxPerDay: 50,
+  maxPerTransaction: 2,
   allowedRecipients: [],
   blockedRecipients: [],
 }
 
+type View = 'landing' | 'form' | 'live' | 'dashboard'
+
 export default function App() {
-  const [showDashboard, setShowDashboard] = useState(false)
-  const [history, setHistory] = useState<PaymentRecord[]>([])
-  const [balance, setBalance] = useState<string | null>(null)
-  const [policy, setPolicy] = useState<PolicyConfig>(DEFAULT_POLICY)
+  const [view, setView]             = useState<View>('landing')
+  const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null)
+  const [history, setHistory]       = useState<PaymentRecord[]>([])
+  const [balance, setBalance]       = useState<string | null>(null)
+  const [policy, setPolicy]         = useState<PolicyConfig>(DEFAULT_POLICY)
 
   // Load policy once on mount
   useEffect(() => {
@@ -51,30 +56,46 @@ export default function App() {
   }, [])
 
   const today = new Date().toDateString()
-  const todayTxs = history.filter(tx => new Date(tx.timestamp).toDateString() === today)
-  const autoCount   = todayTxs.filter(t => t.policy === 'auto').length
-  const ledgerCount = todayTxs.filter(t => t.policy === 'ledger' && t.status !== 'pending').length
-  const deniedCount = todayTxs.filter(t => t.policy === 'denied' || t.status === 'rejected').length
-  const spentToday  = todayTxs
-    .filter(t => t.status === 'approved')
-    .reduce((s, t) => s + parseFloat(t.amount || '0'), 0)
+  const todayTxs     = history.filter(tx => new Date(tx.timestamp).toDateString() === today)
+  const autoCount    = todayTxs.filter(t => t.policy === 'auto').length
+  const ledgerCount  = todayTxs.filter(t => t.policy === 'ledger' && t.status !== 'pending').length
+  const deniedCount  = todayTxs.filter(t => t.policy === 'denied' || t.status === 'rejected').length
+  const spentToday   = todayTxs.filter(t => t.status === 'approved').reduce((s, t) => s + parseFloat(t.amount || '0'), 0)
   const lastTxAmount = history.length > 0 ? parseFloat(history[history.length - 1].amount || '0') : 0
   const hasPendingLedger = history.some(t => t.status === 'pending')
 
-  if (!showDashboard) {
-    return <Landing onLaunch={() => setShowDashboard(true)} />
+  if (view === 'landing') {
+    return <Landing onLaunch={() => setView('form')} />
+  }
+
+  if (view === 'form') {
+    return (
+      <AgentForm
+        onSubmit={(cfg) => { setAgentConfig(cfg); setView('live') }}
+        onBack={() => setView('landing')}
+      />
+    )
+  }
+
+  if (view === 'live' && agentConfig) {
+    return (
+      <AgentLive
+        config={agentConfig}
+        onOpenDashboard={() => setView('dashboard')}
+        onBack={() => setView('form')}
+      />
+    )
   }
 
   return (
     <div className="app">
-      <Header balance={balance} />
+      <Header balance={balance} onBack={() => setView('landing')} />
       <Stats
         total={todayTxs.length}
         auto={autoCount}
         ledger={ledgerCount}
         denied={deniedCount}
         spent={spentToday}
-        maxDay={policy.maxPerDay}
       />
       <div className="content">
         <TxFeed history={history} />
