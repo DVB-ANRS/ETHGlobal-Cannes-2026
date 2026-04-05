@@ -6,6 +6,27 @@ import type { AgentRequest } from "../types/index.js";
 import { gateway } from "../core/gateway.js";
 import { vaultManager } from "../core/vault-manager.js";
 
+// ── In-memory log buffer for SSE ──
+interface LogEntry {
+  ts: number;
+  tag: string;
+  msg: string;
+  level: "info" | "success" | "warn" | "error" | "payment";
+}
+const logBuffer: LogEntry[] = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sseClients = new Set<any>();
+
+export function pushLog(tag: string, msg: string, level: LogEntry["level"] = "info") {
+  const entry: LogEntry = { ts: Date.now(), tag, msg, level };
+  logBuffer.push(entry);
+  if (logBuffer.length > 500) logBuffer.shift();
+  const data = JSON.stringify(entry);
+  for (const res of sseClients) {
+    try { res.write(`data: ${data}\n\n`); } catch { sseClients.delete(res); }
+  }
+}
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const router = Router();
@@ -71,5 +92,132 @@ router.get("/agent/policy", (_req, res) => {
     res.json({ maxPerTransaction: 2, allowedRecipients: [], blockedRecipients: [] });
   }
 });
+
+// ── SSE log stream ──
+router.get("/agent/logs", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.flushHeaders();
+
+  // Send buffered logs since cursor
+  const cursor = parseInt(req.query.since as string) || 0;
+  const recent = logBuffer.filter(e => e.ts > cursor);
+  for (const entry of recent) {
+    res.write(`data: ${JSON.stringify(entry)}\n\n`);
+  }
+
+  sseClients.add(res);
+  req.on("close", () => sseClients.delete(res));
+});
+
+// ── Agent run trigger ──
+interface RunConfig {
+  name: string;
+  provider: "groq" | "openai";
+  apiKey: string;
+  task: string;
+}
+
+const MOCK_BASE = "http://localhost:4021";
+
+router.post("/agent/run", async (req, res) => {
+  const config = req.body as RunConfig;
+  if (!config.name || !config.provider || !config.apiKey || !config.task) {
+    res.status(400).json({ error: "name, provider, apiKey, task required" });
+    return;
+  }
+
+  res.json({ ok: true, message: "Agent started" });
+
+  // Run async, don't await
+  runAgentFlow(config).catch((err: Error) => {
+    pushLog("Error", err.message, "error");
+  });
+});
+
+async function runAgentFlow(config: RunConfig) {
+  const task = config.task.toLowerCase();
+
+  pushLog("Agent", `${config.name} connected via ${config.provider.toUpperCase()}`, "success");
+  pushLog("Agent", `Task: "${config.task}"`, "info");
+  pushLog("Gateway", "SecretPay middleware active — Base Sepolia", "info");
+
+  await delay(600);
+
+  // Determine which use cases to run based on task keywords
+  const runAuto   = task.includes("auto") || task.includes("data") || task.includes("cheap") || task.includes("small") || !task.includes("ledger");
+  const runLedger = task.includes("ledger") || task.includes("bulk") || task.includes("large") || task.includes("big") || task.includes("all");
+  const runDeny   = task.includes("deny") || task.includes("block") || task.includes("blacklist") || task.includes("all");
+
+  // Always run at least auto
+  if (runAuto || (!runLedger && !runDeny)) {
+    await runUseCase({
+      label: "UC1 — Auto-approve ($0.10)",
+      url: `${MOCK_BASE}/data`,
+      expectedPolicy: "auto",
+    });
+    await delay(800);
+  }
+
+  if (runLedger) {
+    await runUseCase({
+      label: "UC2 — Ledger approve ($1.50)",
+      url: `${MOCK_BASE}/bulk-data`,
+      expectedPolicy: "ledger",
+    });
+    await delay(800);
+  }
+
+  if (runDeny) {
+    await runUseCase({
+      label: "UC3 — Denied (cap exceeded)",
+      url: `${MOCK_BASE}/premium-data`,
+      expectedPolicy: "denied",
+    });
+    await delay(400);
+  }
+
+  pushLog("Agent", `Task complete — ${config.name} shutting down`, "success");
+}
+
+async function runUseCase({ label, url, expectedPolicy }: { label: string; url: string; expectedPolicy: string }) {
+  pushLog("Agent", `→ ${label}`, "payment");
+  pushLog("Gateway", `POST /agent/request { url: "${url}" }`, "info");
+
+  try {
+    const res = await fetch("http://localhost:3000/agent/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    const data = await res.json() as {
+      payment?: { policy: string; amount: string; burner: string; txHash?: string };
+      error?: string;
+      reason?: string;
+    };
+
+    if (data.payment) {
+      const p = data.payment;
+      pushLog("Policy", `Decision: ${p.policy.toUpperCase()}`, p.policy === "auto" ? "success" : p.policy === "ledger" ? "warn" : "error");
+      pushLog("Payment", `Amount: $${p.amount} USDC`, "payment");
+      if (p.burner) pushLog("Privacy", `Burner: ${p.burner.slice(0, 10)}...${p.burner.slice(-6)}`, "info");
+      if (p.txHash) pushLog("Chain", `Tx: ${p.txHash.slice(0, 16)}...`, "success");
+      pushLog("Gateway", `← ${res.status} OK`, "success");
+    } else if (data.error) {
+      const isExpectedDeny = expectedPolicy === "denied";
+      pushLog("Policy", `Decision: DENIED — ${data.reason ?? data.error}`, isExpectedDeny ? "warn" : "error");
+      pushLog("Gateway", `← ${res.status} ${data.error}`, isExpectedDeny ? "warn" : "error");
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    pushLog("Error", `Request failed: ${msg}`, "error");
+  }
+}
+
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export default router;

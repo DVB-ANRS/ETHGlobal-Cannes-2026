@@ -7,25 +7,26 @@ interface Props {
   hasPendingLedger: boolean
 }
 
+// Must match policy engine in src/core/gateway.ts
+const FLOOR   = 0.10   // below → denied
+const LEDGER  = 1.00   // at or above → ledger
+const CAP     = 2.00   // above → denied
+
 const FLOW_STEPS = [
-  { label: 'Proxy', desc: 'request → target API' },
-  { label: '402', desc: 'Payment Required received' },
-  { label: 'Policy', desc: 'evaluates amount & recipient' },
-  { label: 'Ledger', desc: 'hardware approval if needed' },
+  { label: 'Proxy',   desc: 'request → target API' },
+  { label: '402',     desc: 'Payment Required received' },
+  { label: 'Policy',  desc: 'evaluates amount & recipient' },
+  { label: 'Ledger',  desc: 'hardware approval if needed' },
   { label: 'Privacy', desc: 'Unlink pool → burner wallet' },
-  { label: 'x402', desc: 'burner signs & retries request' },
-  { label: '200', desc: 'data returned to agent' },
+  { label: 'x402',    desc: 'burner signs & retries request' },
+  { label: '200',     desc: 'data returned to agent' },
 ]
 
 export default function SidePanel({ policy, spentToday, lastTxAmount, hasPendingLedger }: Props) {
-  const maxTx  = policy.maxPerTransaction
-  const maxDay = policy.maxPerDay
+  const maxTx = policy.maxPerTransaction
 
   const txPct   = Math.min(100, (lastTxAmount / maxTx) * 100)
   const txClass = txPct > 90 ? 'danger' : txPct > 65 ? 'warn' : ''
-
-  const dayPct  = Math.min(100, (spentToday / maxDay) * 100)
-  const dayClass = dayPct > 90 ? 'danger' : dayPct > 65 ? 'warn' : ''
 
   return (
     <div className="side">
@@ -49,7 +50,7 @@ export default function SidePanel({ policy, spentToday, lastTxAmount, hasPending
 
         <div className="policy-item">
           <div className="policy-row">
-            <span className="policy-name">Last tx vs limit</span>
+            <span className="policy-name">Last tx vs cap</span>
             <span className="policy-nums">
               <b>${lastTxAmount.toFixed(2)}</b> / <b>${maxTx.toFixed(2)}</b>
             </span>
@@ -64,16 +65,10 @@ export default function SidePanel({ policy, spentToday, lastTxAmount, hasPending
 
         <div className="policy-item">
           <div className="policy-row">
-            <span className="policy-name">Daily spend</span>
+            <span className="policy-name">Spent today</span>
             <span className="policy-nums">
-              <b>${spentToday.toFixed(2)}</b> / <b>${maxDay.toFixed(2)}</b>
+              <b>${spentToday.toFixed(2)}</b> USDC
             </span>
-          </div>
-          <div className="progress">
-            <div
-              className={`progress-bar${dayClass ? ` ${dayClass}` : ''}`}
-              style={{ width: `${dayPct}%` }}
-            />
           </div>
         </div>
       </div>
@@ -84,15 +79,15 @@ export default function SidePanel({ policy, spentToday, lastTxAmount, hasPending
 
         <div className="rule-row">
           <div className="rule-icon green">✓</div>
-          <div className="rule-text"><b>AUTO</b> — amount ≤ max/tx &amp; daily OK</div>
+          <div className="rule-text"><b>AUTO</b> — ${FLOOR.toFixed(2)} ≤ amount &lt; ${LEDGER.toFixed(2)}</div>
         </div>
         <div className="rule-row">
           <div className="rule-icon amber">⏳</div>
-          <div className="rule-text"><b>LEDGER</b> — exceeds limit or daily cap</div>
+          <div className="rule-text"><b>LEDGER</b> — amount ≥ ${LEDGER.toFixed(2)}</div>
         </div>
         <div className="rule-row">
           <div className="rule-icon red">✕</div>
-          <div className="rule-text"><b>DENIED</b> — blocked recipient or &gt;$100</div>
+          <div className="rule-text"><b>DENIED</b> — amount &lt; ${FLOOR.toFixed(2)} or &gt; ${CAP.toFixed(2)} or blacklisted</div>
         </div>
       </div>
 

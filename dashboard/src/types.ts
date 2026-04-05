@@ -12,7 +12,6 @@ export interface PaymentRecord {
 
 export interface PolicyConfig {
   maxPerTransaction: number
-  maxPerDay: number
   allowedRecipients: string[]
   blockedRecipients: string[]
 }
