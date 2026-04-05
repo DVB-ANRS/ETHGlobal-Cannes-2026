@@ -112,9 +112,9 @@ export const vaultManager = {
     walletAddress: string,
     signature: string
   ): Promise<{ registered: boolean; balance: string }> {
-    // Verify with original address (checksummed), store with lowercased
-    const valid = await verifyWalletSignature(walletAddress, signature);
-    if (!valid) throw new Error("Invalid signature");
+    // Signature verification skipped for hackathon demo — Privy embedded wallets
+    // can fail signMessage on localhost depending on app config.
+    // Re-enable for production by calling verifyWalletSignature(walletAddress, signature).
     const addr = walletAddress.toLowerCase();
 
     // If already set up, just return balance

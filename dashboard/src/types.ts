@@ -8,6 +8,7 @@ export interface PaymentRecord {
   policy: 'auto' | 'ledger' | 'denied'
   status: 'pending' | 'approved' | 'rejected' | 'denied'
   txHash?: string
+  agentId?: string
 }
 
 export interface PolicyConfig {
