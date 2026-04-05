@@ -181,12 +181,69 @@ export default function Landing({ onLaunch }: Props) {
               />
             </em>
           </h1>
+          <p className="l-hero-pitch">
+            AI agents make hundreds of payments a day each one publicly traceable on-chain.<br />
+          </p>
           <div className="l-hero-actions">
             <button className="l-cta" onClick={onLaunch}>Launch Dashboard</button>
             <a className="l-cta-ghost" href="https://github.com" target="_blank" rel="noopener noreferrer">
               View on GitHub ↗
             </a>
           </div>
+        </div>
+
+        {/* ── Hero diagram ── */}
+        <div className="l-hero-diagram" aria-hidden="true">
+          <svg viewBox="0 0 340 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="l-hero-diagram-svg">
+            {/* Dashed vertical spine */}
+            <line x1="170" y1="52" x2="170" y2="328" stroke="#d0d0d0" strokeWidth="1" strokeDasharray="4 4" />
+
+            {/* ── Node 1 : AI Agent ── */}
+            <rect x="95" y="10" width="150" height="44" rx="3" fill="#fff" stroke="#111" strokeWidth="1.5" />
+            <text x="130" y="27" fontFamily="'JetBrains Mono',monospace" fontSize="9" fill="#888" letterSpacing="1">AI AGENT</text>
+            <text x="116" y="43" fontFamily="'IBM Plex Sans',sans-serif" fontSize="12" fontWeight="600" fill="#111">POST /agent/request</text>
+
+            {/* arrow down */}
+            <line x1="170" y1="54" x2="170" y2="86" stroke="#bbb" strokeWidth="1" />
+            <polygon points="170,90 165,82 175,82" fill="#bbb" />
+
+            {/* ── Node 2 : SecretPay Gateway ── */}
+            <rect x="75" y="92" width="190" height="52" rx="3" fill="#000" />
+            <text x="104" y="110" fontFamily="'JetBrains Mono',monospace" fontSize="9" fill="#666" letterSpacing="1">SECRETPAY GATEWAY</text>
+            <text x="100" y="130" fontFamily="'IBM Plex Sans',sans-serif" fontSize="12" fontWeight="600" fill="#fff">Policy · 402 intercept</text>
+
+            {/* arrow down */}
+            <line x1="170" y1="144" x2="170" y2="172" stroke="#bbb" strokeWidth="1" />
+            <polygon points="170,176 165,168 175,168" fill="#bbb" />
+
+            {/* ── Node 3 : Unlink ZK Pool ── */}
+            <rect x="85" y="178" width="170" height="52" rx="3" fill="#fff" stroke="#111" strokeWidth="1.5" strokeDasharray="5 3" />
+            <text x="112" y="196" fontFamily="'JetBrains Mono',monospace" fontSize="9" fill="#888" letterSpacing="1">UNLINK ZK POOL</text>
+            <text x="106" y="217" fontFamily="'IBM Plex Sans',sans-serif" fontSize="12" fontWeight="600" fill="#111">Burner wallet minted</text>
+
+            {/* arrow down */}
+            <line x1="170" y1="230" x2="170" y2="258" stroke="#bbb" strokeWidth="1" />
+            <polygon points="170,262 165,254 175,254" fill="#bbb" />
+
+            {/* ── Node 4 : x402 Payment ── */}
+            <rect x="85" y="264" width="170" height="52" rx="3" fill="#fff" stroke="#111" strokeWidth="1.5" />
+            <text x="117" y="282" fontFamily="'JetBrains Mono',monospace" fontSize="9" fill="#888" letterSpacing="1">x402 · BASE SEPOLIA</text>
+            <text x="104" y="302" fontFamily="'IBM Plex Sans',sans-serif" fontSize="12" fontWeight="600" fill="#111">Burner signs &amp; pays</text>
+
+            {/* arrow down */}
+            <line x1="170" y1="316" x2="170" y2="336" stroke="#bbb" strokeWidth="1" />
+            <polygon points="170,340 165,332 175,332" fill="#bbb" />
+
+            {/* ── Node 5 : API Response ── */}
+            <rect x="95" y="342" width="150" height="34" rx="3" fill="#f5f5f5" stroke="#ccc" strokeWidth="1" />
+            <text x="134" y="354" fontFamily="'JetBrains Mono',monospace" fontSize="9" fill="#888" letterSpacing="1">API RESPONSE</text>
+            <text x="126" y="369" fontFamily="'IBM Plex Sans',sans-serif" fontSize="11" fontWeight="500" fill="#555">Data returned ✓</text>
+
+            {/* ── Side label : Ledger approval ── */}
+            <line x1="265" y1="118" x2="305" y2="118" stroke="#ccc" strokeWidth="1" strokeDasharray="3 3" />
+            <rect x="305" y="108" width="30" height="20" rx="2" fill="#fff" stroke="#bbb" strokeWidth="1" />
+            <text x="311" y="121" fontFamily="'JetBrains Mono',monospace" fontSize="7.5" fill="#999" letterSpacing="0.5">HW</text>
+          </svg>
         </div>
 
       </section>
