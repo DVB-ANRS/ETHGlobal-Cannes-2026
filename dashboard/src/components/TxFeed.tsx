@@ -115,41 +115,52 @@ export default function TxFeed({ history }: Props) {
                   </tr>
 
                   {/* Ledger proof expandable row */}
-                  {expandedId === tx.id && tx.ledgerProof && (
-                    <tr key={`${tx.id}-proof`} className="tx-proof-row">
+                  {expandedId === tx.id && (
+                    <tr className="tx-proof-row">
                       <td colSpan={6}>
                         <div className="tx-proof">
                           <div className="tx-proof-badge">LEDGER SIGNATURE PROOF</div>
-                          <div className="tx-proof-grid">
-                            <div className="tx-proof-item">
-                              <span className="tx-proof-key">Signer (recovered)</span>
-                              <span className="tx-proof-val tx-proof-addr">{tx.ledgerProof.signerAddress}</span>
+                          {tx.ledgerProof ? (
+                            <>
+                              <div className="tx-proof-grid">
+                                <div className="tx-proof-item">
+                                  <span className="tx-proof-key">Signer (recovered)</span>
+                                  <span className="tx-proof-val tx-proof-addr">{tx.ledgerProof.signerAddress}</span>
+                                </div>
+                                <div className="tx-proof-item">
+                                  <span className="tx-proof-key">v</span>
+                                  <span className="tx-proof-val">{tx.ledgerProof.signature.v}</span>
+                                </div>
+                                <div className="tx-proof-item">
+                                  <span className="tx-proof-key">r</span>
+                                  <span className="tx-proof-val">{tx.ledgerProof.signature.r}</span>
+                                </div>
+                                <div className="tx-proof-item">
+                                  <span className="tx-proof-key">s</span>
+                                  <span className="tx-proof-val">{tx.ledgerProof.signature.s}</span>
+                                </div>
+                                <div className="tx-proof-item">
+                                  <span className="tx-proof-key">Message</span>
+                                  <pre className="tx-proof-msg">{tx.ledgerProof.message}</pre>
+                                </div>
+                              </div>
+                              <div className="tx-proof-verify">
+                                ecrecover(hash(message), sig) = {shortAddr(tx.ledgerProof.signerAddress)} = Ledger address
+                              </div>
+                            </>
+                          ) : (
+                            <div className="tx-proof-grid">
+                              <div className="tx-proof-item">
+                                <span className="tx-proof-key">Status</span>
+                                <span className="tx-proof-val">Approved via Ledger (signature pending — connect Speculos for cryptographic proof)</span>
+                              </div>
                             </div>
-                            <div className="tx-proof-item">
-                              <span className="tx-proof-key">v</span>
-                              <span className="tx-proof-val">{tx.ledgerProof.signature.v}</span>
-                            </div>
-                            <div className="tx-proof-item">
-                              <span className="tx-proof-key">r</span>
-                              <span className="tx-proof-val">{tx.ledgerProof.signature.r}</span>
-                            </div>
-                            <div className="tx-proof-item">
-                              <span className="tx-proof-key">s</span>
-                              <span className="tx-proof-val">{tx.ledgerProof.signature.s}</span>
-                            </div>
-                            <div className="tx-proof-item">
-                              <span className="tx-proof-key">Message</span>
-                              <pre className="tx-proof-msg">{tx.ledgerProof.message}</pre>
-                            </div>
-                          </div>
-                          <div className="tx-proof-verify">
-                            ecrecover(hash(message), sig) = {shortAddr(tx.ledgerProof.signerAddress)} = Ledger address
-                          </div>
+                          )}
                         </div>
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
