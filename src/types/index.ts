@@ -37,7 +37,6 @@ export interface PaymentRecord {
 
 export interface PolicyConfig {
   maxPerTransaction: number;
-  maxPerDay: number;
   allowedRecipients: string[];
   blockedRecipients: string[];
 }
@@ -48,9 +47,6 @@ export interface AgentPolicy {
   agentAddress: string;
   label?: string;
   maxPerTx: number;
-  maxPerDay: number;
-  spentToday: number;
-  lastResetDate: string; // ISO date "2026-04-05"
 }
 
 export interface UserVault {

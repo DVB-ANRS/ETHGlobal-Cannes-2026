@@ -41,18 +41,14 @@ const stubPrivacy: PrivacyRouter = {
 };
 
 const stubPolicy: PolicyEngine = {
-  _dailySpend: 0,
   evaluate(amount: number, _recipient: string): PolicyDecision {
     if (amount < 0.1) return "denied";
     if (amount > 2) return "denied";
     if (amount >= 1) return "ledger";
-    if (this._dailySpend + amount > 10) return "ledger";
     return "auto";
   },
-  recordSpending(amount: number) {
-    this._dailySpend += amount;
-  },
-} as PolicyEngine & { _dailySpend: number };
+  recordSpending(_amount: number) {},
+};
 
 const stubLedger: LedgerBridge = {
   async requestApproval(details) {

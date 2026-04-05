@@ -75,7 +75,7 @@ function separator(title: string) {
 
 async function main() {
   logger.payment("=".repeat(60));
-  logger.payment("  SecretPay Demo — 5 Use Cases");
+  logger.payment("  SecretPay Demo — 4 Use Cases");
   logger.payment("=".repeat(60));
 
   // Verify gateway is up
@@ -103,29 +103,8 @@ async function main() {
   logger.payment(">>> Press REJECT on Ledger device <<<");
   await sendRequest(`${MOCK_BASE}/bulk-data`, "Ledger reject $1.50");
 
-  // ── UC4: Budget exhaustion ──
-  separator("UC4: Budget exhaustion — 20× $0.50 requests");
-  logger.payment(
-    "Sending 20 requests at $0.50 to hit daily budget ($10 maxPerDay)..."
-  );
-  for (let i = 1; i <= 20; i++) {
-    const result = await sendRequest(
-      `${MOCK_BASE}/budget-data`,
-      `Budget test ${i}/20`
-    );
-    // Stop early if policy escalates to ledger
-    if (result.payment?.policy === "ledger-approved" || result.reason === "ledger") {
-      logger.payment(`Budget limit hit at request ${i} — policy escalated to ledger`);
-      break;
-    }
-    if (result.error) {
-      logger.payment(`Request ${i} failed — stopping budget test`);
-      break;
-    }
-  }
-
-  // ── UC5: Blacklist ──
-  separator("UC5: Blacklist — denied recipient");
+  // ── UC4: Blacklist ──
+  separator("UC4: Blacklist — denied recipient");
   logger.payment("NOTE: Requires a blacklisted recipient in policy.json (Dev 4)");
   await sendRequest(`${MOCK_BASE}/data`, "Blacklist test");
 
