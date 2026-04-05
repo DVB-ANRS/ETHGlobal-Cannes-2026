@@ -4,7 +4,17 @@
       "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\alger\\\\AppData\\\\Local\\\\npm-cache\\\\_logs\\\\2026-04-04T23_29_00_036Z-debug-0.log' -Tail 30\")",
       "Bash(powershell -Command \"Get-Command pnpm -ErrorAction SilentlyContinue; dir 'C:\\\\Users\\\\alger\\\\AppData\\\\Roaming\\\\npm' -Filter 'pnpm*' 2>&1; dir 'C:\\\\Program Files\\\\nodejs' -Filter 'pnpm*' 2>&1\")",
       "Bash(powershell -Command \"Get-ChildItem 'C:\\\\Users\\\\alger' -Recurse -Filter 'pnpm.cmd' -ErrorAction SilentlyContinue | Select-Object -First 5 FullName\")",
-      "Bash(powershell -Command \"& 'C:\\\\Users\\\\alger\\\\.cache\\\\act\\\\tool_cache\\\\node\\\\24.12.0\\\\x64\\\\node_modules\\\\corepack\\\\shims\\\\pnpm.cmd' --version\")"
+      "Bash(powershell -Command \"& 'C:\\\\Users\\\\alger\\\\.cache\\\\act\\\\tool_cache\\\\node\\\\24.12.0\\\\x64\\\\node_modules\\\\corepack\\\\shims\\\\pnpm.cmd' --version\")",
+      "Bash(npm install:*)",
+      "Bash(where pnpm:*)",
+      "Bash(where npx:*)",
+      "Bash(node -e \"console.log\\(process.execPath\\)\")",
+      "Bash(npx pnpm:*)",
+      "Read(//tmp/**)",
+      "Bash(node -e ':*)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

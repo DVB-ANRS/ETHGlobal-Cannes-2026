@@ -15,6 +15,7 @@ export interface PaymentRecord {
   status: 'pending' | 'approved' | 'rejected' | 'denied'
   txHash?: string
   ledgerProof?: LedgerProof
+  agentId?: string
 }
 
 export interface PolicyConfig {

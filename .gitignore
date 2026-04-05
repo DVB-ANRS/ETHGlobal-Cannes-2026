@@ -3,3 +3,4 @@ dist
 .env
 .DS_Store
 speculos-apps/
+*.env.local

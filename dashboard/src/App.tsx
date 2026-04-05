@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { usePrivy } from '@privy-io/react-auth'
 import type { PaymentRecord, PolicyConfig } from './types'
 import Header from './components/Header'
 import Stats from './components/Stats'
@@ -18,14 +19,30 @@ const DEFAULT_POLICY: PolicyConfig = {
   blockedRecipients: [],
 }
 
-type View = 'landing' | 'form' | 'live' | 'dashboard'
+type View = 'landing' | 'live' | 'dashboard'
+
+function resolveWalletAddress(user: { linkedAccounts?: Array<{ type?: string; address?: string }> }): string | null {
+  const linked = user.linkedAccounts ?? []
+
+  // Privy account payloads can differ by provider/type, so we accept any linked account carrying an address.
+  const walletLike = linked.find(a => a.type === 'wallet' && typeof a.address === 'string' && a.address.length > 0)
+    ?? linked.find(a => typeof a.address === 'string' && a.address.length > 0)
+
+  return walletLike?.address ?? null
+}
 
 export default function App() {
-  const [view, setView]             = useState<View>('landing')
-  const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null)
-  const [history, setHistory]       = useState<PaymentRecord[]>([])
-  const [balance, setBalance]       = useState<string | null>(null)
-  const [policy, setPolicy]         = useState<PolicyConfig>(DEFAULT_POLICY)
+  const { login, authenticated, user }  = usePrivy()
+
+  const [view, setView]                 = useState<View>('landing')
+  const [showAgentModal, setShowAgentModal] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [vaultReady, setVaultReady]     = useState(false)
+  const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [agentConfig, setAgentConfig]   = useState<AgentConfig | null>(null)
+  const [history, setHistory]           = useState<PaymentRecord[]>([])
+  const [balance, setBalance]           = useState<string | null>(null)
+  const [policy, setPolicy]             = useState<PolicyConfig>(DEFAULT_POLICY)
 
   // Load policy once on mount
   useEffect(() => {
@@ -56,34 +73,85 @@ export default function App() {
     return () => clearInterval(id)
   }, [])
 
-  const today = new Date().toDateString()
-  const todayTxs     = history.filter(tx => new Date(tx.timestamp).toDateString() === today)
-  const autoCount    = todayTxs.filter(t => t.policy === 'auto').length
-  const ledgerCount  = todayTxs.filter(t => t.policy === 'ledger' && t.status !== 'pending').length
-  const deniedCount  = todayTxs.filter(t => t.policy === 'denied' || t.status === 'rejected').length
-  const spentToday   = todayTxs.filter(t => t.status === 'approved').reduce((s, t) => s + parseFloat(t.amount || '0'), 0)
-  const lastTxAmount = history.length > 0 ? parseFloat(history[history.length - 1].amount || '0') : 0
+  // After Privy login: extract wallet address + setup vault via /onboard/setup
+  useEffect(() => {
+    if (!authenticated || !user || vaultReady) return
+
+    const addr = resolveWalletAddress(user as { linkedAccounts?: Array<{ type?: string; address?: string }> })
+    if (!addr) return
+
+    setWalletAddress(addr)
+
+    const doSetup = async () => {
+      try {
+        // Setup vault on backend — signature verification bypassed for hackathon demo
+        const setupRes = await fetch('/onboard/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: addr, signature: '0x' }),
+        })
+        if (!setupRes.ok) throw new Error('Vault setup failed')
+
+        const data = await setupRes.json() as { balance: string }
+        setBalance(data.balance)
+        setVaultReady(true)
+        setView('dashboard')
+        setShowAgentModal(true)
+      } catch {
+        // If onboarding fails (e.g. backend offline), still go to dashboard
+        setVaultReady(true)
+        setView('dashboard')
+        setShowAgentModal(true)
+      }
+    }
+
+    doSetup()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticated, user])
+
+  async function handleLaunch() {
+    if (authenticated && user) {
+      if (vaultReady) {
+        setView('dashboard')
+        setShowAgentModal(true)
+      } else {
+        // Prevent dead-end if onboarding is delayed or wallet detection misses the expected shape.
+        setView('dashboard')
+      }
+      // else onboarding useEffect will handle it
+      return
+    }
+
+    if (isConnecting) return
+
+    setIsConnecting(true)
+    try {
+      await login()
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+
+  const today            = new Date().toDateString()
+  const todayTxs         = history.filter(tx => new Date(tx.timestamp).toDateString() === today)
+  const autoCount        = todayTxs.filter(t => t.policy === 'auto').length
+  const ledgerCount      = todayTxs.filter(t => t.policy === 'ledger' && t.status !== 'pending').length
+  const deniedCount      = todayTxs.filter(t => t.policy === 'denied' || t.status === 'rejected').length
+  const spentToday       = todayTxs.filter(t => t.status === 'approved').reduce((s, t) => s + parseFloat(t.amount || '0'), 0)
+  const lastTxAmount     = history.length > 0 ? parseFloat(history[history.length - 1].amount || '0') : 0
   const hasPendingLedger = history.some(t => t.status === 'pending')
 
   if (view === 'landing') {
-    return <><LedgerModal /><Landing onLaunch={() => setView('form')} /></>
-  }
-
-  if (view === 'form') {
-    return (
-      <><LedgerModal /><AgentForm
-        onSubmit={(cfg) => { setAgentConfig(cfg); setView('live') }}
-        onBack={() => setView('landing')}
-      /></>
-    )
+    return <><LedgerModal /><Landing onLaunch={handleLaunch} /></>
   }
 
   if (view === 'live' && agentConfig) {
     return (
       <><LedgerModal /><AgentLive
         config={agentConfig}
+        walletAddress={walletAddress}
         onOpenDashboard={() => setView('dashboard')}
-        onBack={() => setView('form')}
+        onBack={() => setShowAgentModal(true)}
       /></>
     )
   }
@@ -106,8 +174,17 @@ export default function App() {
           spentToday={spentToday}
           lastTxAmount={lastTxAmount}
           hasPendingLedger={hasPendingLedger}
+          walletAddress={walletAddress}
         />
       </div>
+
+      {showAgentModal && (
+        <AgentForm
+          walletAddress={walletAddress}
+          onSubmit={(cfg) => { setAgentConfig(cfg); setShowAgentModal(false); setView('live') }}
+          onBack={() => setShowAgentModal(false)}
+        />
+      )}
     </div>
   )
 }
