@@ -1,0 +1,8 @@
+FROM ghcr.io/ledgerhq/speculos
+
+COPY speculos-apps/ethereum-nanosp.elf /speculos/apps/ethereum-nanosp.elf
+
+EXPOSE 5001 40000
+
+ENTRYPOINT ["python3", "-m", "speculos"]
+CMD ["--model", "nanosp", "--display", "headless", "--apdu-port", "40000", "--api-port", "5001", "--seed", "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about", "/speculos/apps/ethereum-nanosp.elf"]
