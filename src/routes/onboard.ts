@@ -58,9 +58,9 @@ router.get("/onboard/balance", async (req, res) => {
 });
 
 // ─── POST /onboard/agents ────────────────────────────────────────────
-// Body: { walletAddress, agentAddress, label?, maxPerTx?, maxPerDay? }
+// Body: { walletAddress, agentAddress, label?, maxPerTx? }
 router.post("/onboard/agents", (req, res) => {
-  const { walletAddress, agentAddress, label, maxPerTx, maxPerDay } = req.body;
+  const { walletAddress, agentAddress, label, maxPerTx } = req.body;
   if (!walletAddress || !agentAddress) {
     res.status(400).json({ error: "walletAddress and agentAddress are required" });
     return;
@@ -69,7 +69,6 @@ router.post("/onboard/agents", (req, res) => {
     const agent = vaultManager.addAgent(walletAddress, agentAddress, {
       label,
       maxPerTx,
-      maxPerDay,
     });
     res.json({ added: true, agent });
   } catch (err) {
