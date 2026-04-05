@@ -23,8 +23,7 @@ interface PolicyEngine {
 }
 
 interface LedgerBridge {
-  requestApproval(details: { amount: string; recipient: string; service: string }): Promise<"approved" | "rejected">;
-  getLastProof?(): LedgerProof | null;
+  requestApproval(details: { amount: string; recipient: string; service: string }): Promise<{ decision: "approved" | "rejected"; proof?: LedgerProof }>;
 }
 
 interface PaymentModule {
@@ -68,7 +67,7 @@ const stubPolicy: PolicyEngine = {
 const stubLedger: LedgerBridge = {
   async requestApproval(details) {
     logger.ledger(`[STUB] Ledger approval requested: $${details.amount} → ${details.recipient}`);
-    return "approved";
+    return { decision: "approved" };
   },
 };
 
@@ -197,7 +196,7 @@ export class Gateway {
       this.paymentHistory.push(pendingRecord);
 
       logger.ledger("Requesting hardware approval...");
-      const approval = await this.ledger.requestApproval({
+      const { decision: approval, proof: ledgerProof } = await this.ledger.requestApproval({
         amount,
         recipient,
         service: url,
@@ -209,7 +208,7 @@ export class Gateway {
       }
       logger.ledger("Operator APPROVED the payment");
       pendingRecord.status = "approved";
-      pendingRecord.ledgerProof = this.ledger.getLastProof?.() ?? undefined;
+      pendingRecord.ledgerProof = ledgerProof;
     }
 
     // ── Step 6 : Privacy — withdraw to burner (fallback to backup key) ──
