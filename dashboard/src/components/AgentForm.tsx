@@ -59,7 +59,7 @@ export default function AgentForm({ onSubmit, onBack }: Props) {
         <div className="af-header">
           <button className="af-back" onClick={onBack}>← Back</button>
           <div className="af-logo-row">
-            <img src="/secret_pay.png" alt="SecretPay" className="af-logo" />
+            <img src="/Logo SecretPay.png" alt="SecretPay" className="af-logo" />
           </div>
         </div>
 
