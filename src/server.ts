@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import healthRouter from "./routes/health.js";
 import agentRouter from "./routes/agent.js";
+import agentsRouter from "./routes/agents.js";
 import onboardRouter from "./routes/onboard.js";
 import { appConfig } from "./utils/config.js";
 import { logger } from "./utils/logger.js";
@@ -16,6 +17,7 @@ app.use(express.json());
 
 app.use(healthRouter);
 app.use(agentRouter);
+app.use(agentsRouter);
 app.use(onboardRouter);
 
 app.use((_req, res) => {
