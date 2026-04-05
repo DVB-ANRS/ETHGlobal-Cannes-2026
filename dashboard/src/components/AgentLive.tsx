@@ -77,6 +77,71 @@ function shortAddr(addr: string) {
   return addr.slice(0, 8) + '…' + addr.slice(-6)
 }
 
+// ── Terminal line renderers ──────────────────────────────────
+
+const TERM_LABEL: Record<EventCard['kind'], string> = {
+  thinking: 'AGENT',
+  request:  'GATEWAY',
+  payment:  'PAYMENT',
+  response: 'AGENT',
+  error:    'ERROR',
+  done:     'AGENT',
+}
+
+function TermLine({ card }: { card: EventCard }) {
+  const ts   = fmtTime(card.ts)
+  const kind = card.kind
+  const label = TERM_LABEL[kind]
+
+  // For payment cards, pick sub-label based on policy
+  const payLabel = card.policy === 'auto' ? 'AUTO' : card.policy === 'ledger' ? 'LEDGER' : 'DENIED'
+
+  return (
+    <div className={`al-term-line al-term-${kind}${card.policy ? ` al-term-pay-${card.policy}` : ''}`}>
+      <span className="al-term-ts">{ts}</span>
+
+      {kind === 'payment' ? (
+        <>
+          <span className={`al-term-label al-term-label-policy al-term-label-${card.policy}`}>
+            {payLabel}
+          </span>
+          <span className="al-term-msg">
+            Decision: <span className={`al-term-decision al-term-decision-${card.policy}`}>
+              {card.policy === 'auto' ? 'AUTO-APPROVE' : card.policy === 'ledger' ? 'LEDGER-APPROVED' : 'DENIED'}
+            </span>
+          </span>
+          {card.amount && (
+            <span className="al-term-amount">${parseFloat(card.amount).toFixed(2)} USDC</span>
+          )}
+        </>
+      ) : (
+        <>
+          <span className={`al-term-label al-term-label-${kind}`}>{label}</span>
+          <span className="al-term-msg">{card.title}</span>
+          {card.detail && <span className="al-term-detail">{card.detail}</span>}
+        </>
+      )}
+
+      {/* Extra lines for payment meta */}
+      {kind === 'payment' && card.burner && (
+        <span className="al-term-burner">
+          {'  '}
+          <span className="al-term-label al-term-label-privacy">PRIVACY</span>
+          <span className="al-term-msg">Burner: </span>
+          <a
+            className="al-term-link"
+            href={`https://sepolia.basescan.org/address/${card.burner}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {shortAddr(card.burner)} ↗
+          </a>
+        </span>
+      )}
+    </div>
+  )
+}
+
 interface Props {
   config: AgentConfig
   walletAddress: string | null
@@ -167,7 +232,7 @@ export default function AgentLive({ config, walletAddress, onOpenDashboard, onBa
             <button className="al-stop-btn" onClick={handleStop}>Stop</button>
           )}
           <button className="al-dashboard-btn" onClick={onOpenDashboard}>
-            Full dashboard →
+            Dashboard ↗
           </button>
         </div>
       </div>
@@ -175,68 +240,29 @@ export default function AgentLive({ config, walletAddress, onOpenDashboard, onBa
       {/* ── Body ── */}
       <div className="al-body">
 
-        {/* ── Left: event feed ── */}
+        {/* ── Left: terminal log ── */}
         <div className="al-feed-col">
           <div className="al-feed-header">
-            <span className="al-feed-title">Agent activity</span>
-            <span className="al-feed-count">{cards.length} events</span>
+            <span className="al-feed-title">Agent log</span>
+            <span className="al-feed-count">{cards.length} lines</span>
           </div>
 
-          <div className="al-feed">
+          <div className="al-terminal">
             {cards.length === 0 && (
-              <div className="al-empty">
-                <div className="al-empty-icon">○</div>
-                <p>Waiting for agent events…</p>
+              <div className="al-term-empty">
+                <span className="al-term-cursor">▋</span> Waiting for agent events…
               </div>
             )}
 
             {cards.map(card => (
-              <div key={card.id} className={`al-card al-card-${card.kind}`}>
-                <div className="al-card-header">
-                  <KindIcon kind={card.kind} policy={card.policy} />
-                  <span className="al-card-title">{card.title}</span>
-                  <span className="al-card-time">{fmtTime(card.ts)}</span>
-                </div>
-
-                {card.detail && (
-                  <div className="al-card-detail">{card.detail}</div>
-                )}
-
-                {card.kind === 'payment' && (
-                  <div className="al-card-payment-meta">
-                    {card.amount && (
-                      <span className="al-meta-amount">${parseFloat(card.amount).toFixed(2)} USDC</span>
-                    )}
-                    {card.burner && (
-                      <a
-                        className="al-meta-link"
-                        href={`https://sepolia.basescan.org/address/${card.burner}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Burner: {card.burner.slice(0, 8)}…{card.burner.slice(-6)} ↗
-                      </a>
-                    )}
-                    {card.txHash && (
-                      <a
-                        className="al-meta-link"
-                        href={`https://sepolia.basescan.org/tx/${card.txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Tx: {card.txHash.slice(0, 12)}… ↗
-                      </a>
-                    )}
-                  </div>
-                )}
-              </div>
+              <TermLine key={card.id} card={card} />
             ))}
 
             <div ref={bottomRef} />
           </div>
         </div>
 
-        {/* ── Right: stats + transactions ── */}
+        {/* ── Right: task + stats + transactions ── */}
         <div className="al-side-col">
 
           {/* Task */}
@@ -257,21 +283,21 @@ export default function AgentLive({ config, walletAddress, onOpenDashboard, onBa
 
           {/* Session stats */}
           <div className="al-side-section">
-            <div className="al-side-label">Session</div>
+            <div className="al-side-label">Session Stats</div>
             <div className="al-stats-grid">
               <div className="al-stat">
-                <div className="al-stat-val al-val-green">{approved.length}</div>
+                <div className="al-stat-val">{approved.length}</div>
                 <div className="al-stat-key">Approved</div>
               </div>
               <div className="al-stat">
-                <div className={`al-stat-val al-val-amber${pending.length > 0 ? ' al-val-pulse' : ''}`}>{pending.length}</div>
+                <div className={`al-stat-val${pending.length > 0 ? ' al-val-pulse' : ''}`}>{pending.length}</div>
                 <div className="al-stat-key">Pending</div>
               </div>
               <div className="al-stat">
-                <div className="al-stat-val al-val-red">{denied.length}</div>
+                <div className="al-stat-val">{denied.length}</div>
                 <div className="al-stat-key">Denied</div>
               </div>
-              <div className="al-stat">
+              <div className="al-stat al-stat-spend">
                 <div className="al-stat-val">${spent.toFixed(2)}</div>
                 <div className="al-stat-key">Spent</div>
               </div>
@@ -307,36 +333,19 @@ export default function AgentLive({ config, walletAddress, onOpenDashboard, onBa
   )
 }
 
-function KindIcon({ kind, policy }: { kind: EventCard['kind']; policy?: EventCard['policy'] }) {
-  if (kind === 'thinking')  return <span className="al-icon al-icon-info">○</span>
-  if (kind === 'request')   return <span className="al-icon al-icon-info">→</span>
-  if (kind === 'response')  return <span className="al-icon al-icon-success">✓</span>
-  if (kind === 'error')     return <span className="al-icon al-icon-error">✕</span>
-  if (kind === 'done')      return <span className="al-icon al-icon-success">◎</span>
-  if (kind === 'payment') {
-    if (policy === 'auto')   return <span className="al-icon al-icon-success">$</span>
-    if (policy === 'ledger') return <span className="al-icon al-icon-ledger">⬡</span>
-    return <span className="al-icon al-icon-error">✕</span>
-  }
-  return <span className="al-icon al-icon-info">·</span>
-}
-
 function TxItem({ tx }: { tx: PaymentRecord }) {
-  const statusClass = tx.status === 'approved' ? 'al-tx-approved'
-    : tx.status === 'pending'  ? 'al-tx-pending'
-    : tx.status === 'rejected' ? 'al-tx-rejected'
-    : 'al-tx-denied'
+  const pendingClass = tx.status === 'pending' ? ' al-tx-pending' : ''
 
   let path = tx.url
   try { path = new URL(tx.url).pathname } catch { /* keep full url */ }
 
   return (
-    <div className={`al-tx-item ${statusClass}`}>
-      <div className="al-tx-row">
+    <div className={`al-tx-item${pendingClass}`}>
+      <div className="al-tx-top">
         <span className={`al-tx-badge al-tx-badge-${tx.policy}`}>{tx.policy}</span>
         <span className="al-tx-amount">${parseFloat(tx.amount || '0').toFixed(2)}</span>
-        <span className="al-tx-path">{path}</span>
       </div>
+      <div className="al-tx-path">{path}</div>
       {tx.burner && (
         <a
           className="al-tx-link"
@@ -344,7 +353,7 @@ function TxItem({ tx }: { tx: PaymentRecord }) {
           target="_blank"
           rel="noopener noreferrer"
         >
-          {tx.burner.slice(0, 8)}…{tx.burner.slice(-6)} ↗
+          {tx.burner.slice(0, 10)}…{tx.burner.slice(-6)}
         </a>
       )}
     </div>

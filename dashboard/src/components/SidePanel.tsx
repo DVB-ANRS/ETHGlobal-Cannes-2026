@@ -9,19 +9,8 @@ interface Props {
   walletAddress?: string | null
 }
 
-const FLOOR  = 0.10
 const LEDGER = 1.00
-const CAP    = 2.00
 
-const FLOW_STEPS = [
-  { label: 'Proxy',   desc: 'Request forwarded to target API' },
-  { label: '402',     desc: 'Payment Required intercepted' },
-  { label: 'Policy',  desc: 'Amount & recipient evaluated' },
-  { label: 'Ledger',  desc: 'Hardware approval if ≥ $1.00' },
-  { label: 'Privacy', desc: 'Unlink pool → fresh burner wallet' },
-  { label: 'x402',    desc: 'Burner signs & retries request' },
-  { label: '200',     desc: 'Data returned to agent' },
-]
 
 function shortAddr(addr: string) {
   if (!addr || addr.length < 12) return addr
@@ -127,49 +116,6 @@ export default function SidePanel({ policy, spentToday, lastTxAmount, hasPending
         </div>
       </div>
 
-      {/* ── Decision rules ── */}
-      <div className="section">
-        <div className="section-title">Decision Rules</div>
-
-        <div className="rule-row">
-          <div className="rule-icon green">✓</div>
-          <div className="rule-text">
-            <b>AUTO</b>
-            <span className="rule-range"> — ${FLOOR.toFixed(2)} ≤ amount &lt; ${LEDGER.toFixed(2)}</span>
-          </div>
-        </div>
-        <div className="rule-row">
-          <div className="rule-icon amber">⏳</div>
-          <div className="rule-text">
-            <b>LEDGER</b>
-            <span className="rule-range"> — amount ≥ ${LEDGER.toFixed(2)}</span>
-          </div>
-        </div>
-        <div className="rule-row">
-          <div className="rule-icon red">✕</div>
-          <div className="rule-text">
-            <b>DENIED</b>
-            <span className="rule-range"> — &lt; ${FLOOR.toFixed(2)} or &gt; ${CAP.toFixed(2)} or blacklisted</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Payment flow ── */}
-      <div className="section">
-        <div className="section-title">Payment Flow</div>
-        <div className="flow-list">
-          {FLOW_STEPS.map((step, i) => (
-            <div key={i} className="flow-step">
-              <div className="step-num">{i + 1}</div>
-              <div className="flow-connector" />
-              <div className="step-text">
-                <b>{step.label}</b>
-                <span className="step-desc"> — {step.desc}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* ── Network ── */}
       <div className="section">

@@ -9,7 +9,12 @@
       "Bash(where pnpm:*)",
       "Bash(where npx:*)",
       "Bash(node -e \"console.log\\(process.execPath\\)\")",
-      "Bash(npx pnpm:*)"
+      "Bash(npx pnpm:*)",
+      "Read(//tmp/**)",
+      "Bash(node -e ':*)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }
