@@ -12,7 +12,7 @@ export default function Header({ balance, onBack }: Props) {
     <header className="header">
       <button className="header-back" onClick={onBack}>← Back</button>
       <div className="logo">
-        <img src="/secret_pay.png" alt="SecretPay" className="header-logo-img" />
+        <img src="/Logo SecretPay.png" alt="SecretPay" className="header-logo-img" />
       </div>
 
       <div className="header-sep" />
