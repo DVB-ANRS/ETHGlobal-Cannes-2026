@@ -3,7 +3,7 @@ services:
     name: secretpay-gateway
     runtime: node
     buildCommand: npx pnpm install && npx pnpm build
-    startCommand: node dist/server.js
+    startCommand: node /opt/render/project/src/dist/server.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
