@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import type { PaymentRecord } from '../types'
 
 interface Props {
@@ -75,11 +75,10 @@ export default function TxFeed({ history }: Props) {
             </thead>
             <tbody>
               {rows.map(tx => (
-                <>
+                <Fragment key={tx.id}>
                   <tr
-                    key={tx.id}
-                    className={`tx-row${tx.status === 'pending' ? ' tx-pending' : ''}${tx.ledgerProof ? ' tx-has-proof' : ''}`}
-                    onClick={() => tx.ledgerProof && setExpandedId(expandedId === tx.id ? null : tx.id)}
+                    className={`tx-row${tx.status === 'pending' ? ' tx-pending' : ''}${tx.policy === 'ledger' && tx.status === 'approved' ? ' tx-has-proof' : ''}`}
+                    onClick={() => tx.policy === 'ledger' && tx.status === 'approved' && setExpandedId(expandedId === tx.id ? null : tx.id)}
                   >
                     <td className="td-time">{fmtTime(tx.timestamp)}</td>
                     <td className="td-amount">{fmtAmount(tx.amount)}</td>
