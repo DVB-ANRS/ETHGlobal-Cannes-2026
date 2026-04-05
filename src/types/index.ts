@@ -23,6 +23,12 @@ export interface AgentResponse {
 
 export type PolicyDecision = "auto" | "ledger" | "denied";
 
+export interface LedgerProof {
+  message: string;
+  signature: { v: number; r: string; s: string };
+  signerAddress: string;  // recovered via ecrecover — must match Ledger address
+}
+
 export interface PaymentRecord {
   id: string;
   timestamp: number;
@@ -34,6 +40,7 @@ export interface PaymentRecord {
   status: 'pending' | 'approved' | 'rejected' | 'denied';
   txHash?: string;
   agentId?: string;
+  ledgerProof?: LedgerProof;
 }
 
 export interface PolicyConfig {

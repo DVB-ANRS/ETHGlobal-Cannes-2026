@@ -1,3 +1,9 @@
+export interface LedgerProof {
+  message: string
+  signature: { v: number; r: string; s: string }
+  signerAddress: string
+}
+
 export interface PaymentRecord {
   id: string
   timestamp: number
@@ -8,6 +14,7 @@ export interface PaymentRecord {
   policy: 'auto' | 'ledger' | 'denied'
   status: 'pending' | 'approved' | 'rejected' | 'denied'
   txHash?: string
+  ledgerProof?: LedgerProof
 }
 
 export interface PolicyConfig {

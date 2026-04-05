@@ -4,6 +4,7 @@ import { appConfig } from "../utils/config.js";
 import type {
   AgentRequest,
   AgentResponse,
+  LedgerProof,
   PaymentRecord,
   PolicyDecision,
 } from "../types/index.js";
@@ -23,6 +24,7 @@ interface PolicyEngine {
 
 interface LedgerBridge {
   requestApproval(details: { amount: string; recipient: string; service: string }): Promise<"approved" | "rejected">;
+  getLastProof?(): LedgerProof | null;
 }
 
 interface PaymentModule {
@@ -207,6 +209,7 @@ export class Gateway {
       }
       logger.ledger("Operator APPROVED the payment");
       pendingRecord.status = "approved";
+      pendingRecord.ledgerProof = this.ledger.getLastProof?.() ?? undefined;
     }
 
     // ── Step 6 : Privacy — withdraw to burner (fallback to backup key) ──

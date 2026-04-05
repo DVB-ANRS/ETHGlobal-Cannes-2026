@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       '/agent': 'http://localhost:3000',
       '/health': 'http://localhost:3000',
+      '/ledger': 'http://localhost:3000',
     },
   },
 })

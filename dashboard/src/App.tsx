@@ -7,6 +7,7 @@ import SidePanel from './components/SidePanel'
 import Landing from './components/Landing'
 import AgentForm from './components/AgentForm'
 import AgentLive from './components/AgentLive'
+import LedgerModal from './components/LedgerModal'
 import type { AgentConfig } from './components/AgentForm'
 
 const POLL_MS = 2000
@@ -65,30 +66,31 @@ export default function App() {
   const hasPendingLedger = history.some(t => t.status === 'pending')
 
   if (view === 'landing') {
-    return <Landing onLaunch={() => setView('form')} />
+    return <><LedgerModal /><Landing onLaunch={() => setView('form')} /></>
   }
 
   if (view === 'form') {
     return (
-      <AgentForm
+      <><LedgerModal /><AgentForm
         onSubmit={(cfg) => { setAgentConfig(cfg); setView('live') }}
         onBack={() => setView('landing')}
-      />
+      /></>
     )
   }
 
   if (view === 'live' && agentConfig) {
     return (
-      <AgentLive
+      <><LedgerModal /><AgentLive
         config={agentConfig}
         onOpenDashboard={() => setView('dashboard')}
         onBack={() => setView('form')}
-      />
+      /></>
     )
   }
 
   return (
     <div className="app">
+      <LedgerModal />
       <Header balance={balance} onBack={() => setView('landing')} />
       <Stats
         total={todayTxs.length}
