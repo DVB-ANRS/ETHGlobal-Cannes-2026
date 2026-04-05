@@ -13,7 +13,7 @@ function optional(key: string, fallback: string): string {
 }
 
 export const appConfig = {
-  gatewayPort: parseInt(optional("GATEWAY_PORT", "3000")),
+  gatewayPort: parseInt(optional("PORT", optional("GATEWAY_PORT", "3000"))),
   mockServerPort: parseInt(optional("MOCK_SERVER_PORT", "4021")),
   rpcUrl: optional("BASE_SEPOLIA_RPC_URL", "https://sepolia.base.org"),
   maxPerTx: parseFloat(optional("DEFAULT_MAX_PER_TX", "2")),
