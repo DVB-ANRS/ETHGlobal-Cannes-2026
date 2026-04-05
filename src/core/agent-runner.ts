@@ -95,9 +95,10 @@ export class AgentRunner extends EventEmitter {
         iterations++;
 
         const response = await this.client.chat.completions.create({
-          model: "llama-3.1-70b-versatile",
+          model: "llama-3.3-70b-versatile",
           max_tokens: 1024,
           tools,
+          tool_choice: "auto",
           messages,
         });
 
