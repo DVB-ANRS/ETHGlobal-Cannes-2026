@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { API_BASE } from '../api'
 import type { PaymentRecord } from '../types'
 import type { AgentConfig } from './AgentForm'
 
@@ -161,7 +162,7 @@ export default function AgentLive({ config, walletAddress, onOpenDashboard, onBa
   useEffect(() => {
     const id = setInterval(async () => {
       try {
-        const r = await fetch(`/agents/${config.id}/history`)
+        const r = await fetch(`${API_BASE}/agents/${config.id}/history`)
         if (r.ok) {
           const d = await r.json() as { payments: PaymentRecord[] }
           setHistory(d.payments ?? [])
@@ -179,7 +180,7 @@ export default function AgentLive({ config, walletAddress, onOpenDashboard, onBa
 
   // SSE stream
   useEffect(() => {
-    const es = new EventSource(`/agents/${config.id}/events`)
+    const es = new EventSource(`${API_BASE}/agents/${config.id}/events`)
     es.onmessage = (e) => {
       const event = JSON.parse(e.data) as AgentEvent
       const card = eventToCard(event)
@@ -201,7 +202,7 @@ export default function AgentLive({ config, walletAddress, onOpenDashboard, onBa
   const spent    = approved.reduce((s, t) => s + parseFloat(t.amount || '0'), 0)
 
   async function handleStop() {
-    try { await fetch(`/agents/${config.id}/stop`, { method: 'POST' }) } catch { /* ignore */ }
+    try { await fetch(`${API_BASE}/agents/${config.id}/stop`, { method: 'POST' }) } catch { /* ignore */ }
     setDone(true)
   }
 

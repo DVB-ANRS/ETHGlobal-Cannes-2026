@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_BASE } from '../api'
 
 export interface AgentConfig {
   id: string
@@ -65,7 +66,7 @@ export default function AgentForm({ walletAddress, onSubmit, onBack }: Props) {
     setError(null)
     setLoading(true)
     try {
-      const res = await fetch('/agents/create', {
+      const res = await fetch(`${API_BASE}/agents/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

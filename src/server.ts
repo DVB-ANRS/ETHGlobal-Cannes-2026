@@ -13,7 +13,11 @@ import { createPaymentFetch } from "./core/payment.js";
 const app = express();
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN ?? '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'X-Agent-Address', 'X-Agent-Id', 'X-Wallet-Address'],
+}));
 app.use(express.json());
 
 app.use(healthRouter);

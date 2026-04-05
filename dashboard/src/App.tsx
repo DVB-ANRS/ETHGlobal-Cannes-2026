@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { usePrivy } from '@privy-io/react-auth'
+import { API_BASE } from './api'
 import type { PaymentRecord, PolicyConfig } from './types'
 import Header from './components/Header'
 import Stats from './components/Stats'
@@ -46,7 +47,7 @@ export default function App() {
 
   // Load policy once on mount
   useEffect(() => {
-    fetch('/agent/policy')
+    fetch(`${API_BASE}/agent/policy`)
       .then(r => (r.ok ? r.json() : null))
       .then((data: PolicyConfig | null) => { if (data) setPolicy(data) })
       .catch(() => {})
@@ -56,8 +57,8 @@ export default function App() {
   useEffect(() => {
     const poll = async () => {
       const [histRes, balRes] = await Promise.allSettled([
-        fetch('/agent/history'),
-        fetch('/agent/balance'),
+        fetch(`${API_BASE}/agent/history`),
+        fetch(`${API_BASE}/agent/balance`),
       ])
       if (histRes.status === 'fulfilled' && histRes.value.ok) {
         const data = await histRes.value.json() as { payments: PaymentRecord[] }
@@ -85,7 +86,7 @@ export default function App() {
     const doSetup = async () => {
       try {
         // Setup vault on backend — signature verification bypassed for hackathon demo
-        const setupRes = await fetch('/onboard/setup', {
+        const setupRes = await fetch(`${API_BASE}/onboard/setup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ walletAddress: addr, signature: '0x' }),

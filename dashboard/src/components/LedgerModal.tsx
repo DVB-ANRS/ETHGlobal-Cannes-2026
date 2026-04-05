@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { API_BASE } from '../api'
 import type { LedgerProof } from '../types'
 
 interface PendingTx {
@@ -18,7 +19,7 @@ export default function LedgerModal() {
     let active = true
     const poll = async () => {
       try {
-        const res = await fetch('/ledger/pending')
+        const res = await fetch(`${API_BASE}/ledger/pending`)
         if (!res.ok) return
         const data = await res.json() as { pending: PendingTx | null }
         if (!active) return
@@ -39,7 +40,7 @@ export default function LedgerModal() {
   const handleApprove = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/ledger/approve', { method: 'POST' })
+      const res = await fetch(`${API_BASE}/ledger/approve`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json() as { status: string; proof: LedgerProof | null }
         setResult('approved')
@@ -54,7 +55,7 @@ export default function LedgerModal() {
   const handleReject = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/ledger/reject', { method: 'POST' })
+      const res = await fetch(`${API_BASE}/ledger/reject`, { method: 'POST' })
       if (res.ok) {
         setResult('rejected')
         setPending(null)
