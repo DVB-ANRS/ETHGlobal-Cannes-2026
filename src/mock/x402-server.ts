@@ -25,7 +25,7 @@ const routes = {
       scheme: "exact" as const,
       network: "eip155:84532" as const,
       payTo: appConfig.mockReceiverAddress as `0x${string}`,
-      price: "$0.01",
+      price: "$0.10",
     },
     description: "Real-time market data",
   },
@@ -43,7 +43,7 @@ const routes = {
       scheme: "exact" as const,
       network: "eip155:84532" as const,
       payTo: appConfig.mockReceiverAddress as `0x${string}`,
-      price: "$10",
+      price: "$1.50",
     },
     description: "Historical bulk dataset",
   },
@@ -74,6 +74,15 @@ const routes = {
     },
     description: "Premium research report",
   },
+  "GET /budget-data": {
+    accepts: {
+      scheme: "exact" as const,
+      network: "eip155:84532" as const,
+      payTo: appConfig.mockReceiverAddress as `0x${string}`,
+      price: "$0.50",
+    },
+    description: "Budget test endpoint",
+  },
 };
 
 // 4. Apply x402 payment middleware before route handlers
@@ -83,7 +92,7 @@ app.use(
 
 // 5. Route handlers — only reached after payment is verified
 app.get("/data", (_req, res) => {
-  logger.payment("Serving /data (paid $0.01)");
+  logger.payment("Serving /data (paid $0.10)");
   res.json({
     symbol: "ETH/USD",
     price: 3847.52,
@@ -111,7 +120,7 @@ app.get("/news", (_req, res) => {
 });
 
 app.get("/bulk-data", (_req, res) => {
-  logger.payment("Serving /bulk-data (paid $10)");
+  logger.payment("Serving /bulk-data (paid $1.50)");
   const data = Array.from({ length: 100 }, (_, i) => ({
     id: i + 1,
     pair: "ETH/USD",
@@ -154,6 +163,16 @@ app.get("/premium-report", (_req, res) => {
   });
 });
 
+app.get("/budget-data", (_req, res) => {
+  logger.payment("Serving /budget-data (paid $0.50)");
+  res.json({
+    symbol: "ETH/USD",
+    price: 3847.52,
+    timestamp: new Date().toISOString(),
+    source: "SecretPay Mock API — Budget endpoint",
+  });
+});
+
 // 6. Health check (not paywalled)
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "x402-mock-api" });
@@ -164,6 +183,6 @@ app.listen(appConfig.mockServerPort, () => {
   logger.info(`x402 Mock API running on :${appConfig.mockServerPort}`);
   logger.payment(`Receiver: ${appConfig.mockReceiverAddress}`);
   logger.payment(
-    "Endpoints: /data ($0.01), /news ($0.005), /weather ($0.02), /sentiment ($0.05), /premium-report ($2), /bulk-data ($10)"
+    "Endpoints: /data ($0.10), /news ($0.005), /weather ($0.02), /sentiment ($0.05), /budget-data ($0.50), /bulk-data ($1.50), /premium-report ($2)"
   );
 });
