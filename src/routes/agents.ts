@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { AgentRunner, type AgentEvent } from "../core/agent-runner.js";
+import { gateway } from "../core/gateway.js";
 import { logger } from "../utils/logger.js";
 
 const router = Router();
@@ -94,6 +95,16 @@ router.delete("/agents/:id", (req, res) => {
   agents.delete(req.params.id);
   logger.info(`Agent "${runner.name}" deleted`);
   res.json({ ok: true });
+});
+
+// GET /agents/:id/history — Payment history for this agent
+router.get("/agents/:id/history", (req, res) => {
+  const runner = agents.get(req.params.id);
+  if (!runner) {
+    res.status(404).json({ error: "Agent not found" });
+    return;
+  }
+  res.json({ payments: gateway.getHistory(req.params.id) });
 });
 
 // GET /agents/:id/events — SSE stream of agent events
