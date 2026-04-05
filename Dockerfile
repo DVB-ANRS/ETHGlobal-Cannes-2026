@@ -10,6 +10,6 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig.json ./
 COPY src/ ./src/
 
-EXPOSE 3000
+EXPOSE 3000 4021
 
-CMD ["pnpm", "dev"]
+CMD ["sh", "-c", "pnpm tsx src/mock/x402-server.ts & pnpm dev"]
