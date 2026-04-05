@@ -93,11 +93,11 @@ const mockServer = http.createServer((req, res) => {
 
   // Otherwise return 402
   const amountMap: Record<string, string> = {
-    "402_auto":   "0.01",
-    "402_ledger": "10.00",
-    "402_denied": "0.01",
+    "402_auto":   "10000",       // 0.01 USDC in raw units (6 decimals)
+    "402_ledger": "10000000",    // 10 USDC in raw units
+    "402_denied": "10000",       // 0.01 USDC
   };
-  const amount = amountMap[mockBehavior] ?? "0.01";
+  const amount = amountMap[mockBehavior] ?? "10000";
   const payTo = mockBehavior === "402_denied"
     ? "0xBLACKLISTED0000000000000000000000000000"
     : MOCK_RECEIVER;
@@ -130,7 +130,7 @@ const mockPolicy = {
     if (recipient === "0xBLACKLISTED0000000000000000000000000000") return "denied";
     if (amount > 100) return "denied";
     if (dailySpent + amount > 50) return "ledger";
-    if (amount > 5) return "ledger";
+    if (amount >= 1) return "ledger";
     return "auto";
   },
   recordSpending(amount: number) {
@@ -204,7 +204,7 @@ async function runTests() {
     const r = await gw.handleRequest({ url: `${BASE}/data` });
     r.status === 200 ? ok("status 200 after ledger approve") : fail("status 200", `got ${r.status}`);
     r.payment?.policy === "ledger-approved" ? ok('policy = "ledger-approved"') : fail("wrong policy", r.payment?.policy);
-    r.payment?.amount === "10.00" ? ok("amount = 10.00") : fail("wrong amount", r.payment?.amount);
+    r.payment?.amount === "10" ? ok("amount = 10") : fail("wrong amount", r.payment?.amount);
   }
 
   // ── UC3 : Ledger reject ($10) ──────────────────────────────────────────────

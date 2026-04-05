@@ -1,4 +1,6 @@
 import { logger } from "../utils/logger.js";
+import { privateKeyToAccount } from "viem/accounts";
+import { appConfig } from "../utils/config.js";
 import type {
   AgentRequest,
   AgentResponse,
@@ -41,14 +43,25 @@ const stubPrivacy: PrivacyRouter = {
 };
 
 const stubPolicy: PolicyEngine = {
-  evaluate(amount: number, _recipient: string): PolicyDecision {
-    if (amount < 0.1) return "denied";
-    if (amount > 2) return "denied";
+  _dailySpent: 0,
+  _lastReset: new Date().toDateString(),
+  evaluate(amount: number, recipient: string): PolicyDecision {
+    const today = new Date().toDateString();
+    if (this._lastReset !== today) {
+      this._dailySpent = 0;
+      this._lastReset = today;
+    }
+    const blacklist = ["0xBLACKLISTED0000000000000000000000000000"];
+    if (blacklist.includes(recipient)) return "denied";
+    if (amount > 100) return "denied";
+    if (this._dailySpent + amount > 50) return "ledger";
     if (amount >= 1) return "ledger";
     return "auto";
   },
-  recordSpending(_amount: number) {},
-};
+  recordSpending(amount: number) {
+    this._dailySpent += amount;
+  },
+} as PolicyEngine & { _dailySpent: number; _lastReset: string };
 
 const stubLedger: LedgerBridge = {
   async requestApproval(details) {
@@ -91,7 +104,8 @@ export class Gateway {
   setLedger(l: LedgerBridge) { this.ledger = l; }
   setPayment(p: PaymentModule) { this.payment = p; }
 
-  getHistory(): PaymentRecord[] {
+  getHistory(agentId?: string): PaymentRecord[] {
+    if (agentId) return this.paymentHistory.filter((r) => r.agentId === agentId);
     return this.paymentHistory;
   }
 
@@ -101,6 +115,7 @@ export class Gateway {
 
   async handleRequest(agentReq: AgentRequest, opts?: {
     agentAddress?: string;
+    agentId?: string;
     withdrawFn?: (amount: string) => Promise<{ address: string; privateKey: `0x${string}` }>;
   }): Promise<AgentResponse> {
     const { url, method = "GET", headers = {}, body } = agentReq;
@@ -158,8 +173,9 @@ export class Gateway {
         burner: "",
         policy: "denied",
         status: "denied",
+        agentId: opts?.agentId,
       });
-      return { status: 403, error: "Payment denied by policy", reason: amountNum < 0.1 ? "Amount below minimum ($0.10)" : "Recipient is blacklisted or amount exceeds cap ($2)" };
+      return { status: 403, error: "Payment denied by policy", reason: "Recipient is blacklisted or amount exceeds hard cap" };
     }
 
     // Ledger: push pending record immediately so dashboard shows it while waiting
@@ -174,6 +190,7 @@ export class Gateway {
         burner: "",
         policy: "ledger",
         status: "pending",
+        agentId: opts?.agentId,
       };
       this.paymentHistory.push(pendingRecord);
 
@@ -192,11 +209,10 @@ export class Gateway {
       pendingRecord.status = "approved";
     }
 
-    // ── Step 6 : Privacy — withdraw to burner ──
+    // ── Step 6 : Privacy — withdraw to burner (fallback to backup key) ──
     let burnerAddress: string;
     let burnerPrivateKey: `0x${string}`;
     try {
-      // Use per-agent vault if available, otherwise default privacy router
       const withdrawFunc = opts?.withdrawFn ?? ((amt: string) => this.privacy.withdrawToBurner(amt));
       const burner = await withdrawFunc(amount);
       burnerAddress = burner.address;
@@ -205,7 +221,21 @@ export class Gateway {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       logger.error(`Privacy withdraw failed: ${msg}`);
-      return { status: 500, error: "Privacy layer failed", reason: msg };
+
+      if (appConfig.backupBurnerPrivateKey) {
+        try {
+          logger.privacy(`Fallback → using backup burner key`);
+          burnerPrivateKey = appConfig.backupBurnerPrivateKey;
+          burnerAddress = privateKeyToAccount(burnerPrivateKey).address;
+          logger.privacy(`Backup burner: ${burnerAddress.slice(0, 10)}...`);
+        } catch (backupErr) {
+          const backupMsg = backupErr instanceof Error ? backupErr.message : "Invalid backup key";
+          logger.error(`Backup burner key failed: ${backupMsg}`);
+          return { status: 500, error: "Privacy layer failed and backup key is invalid", reason: msg };
+        }
+      } else {
+        return { status: 500, error: "Privacy layer failed and no backup key configured", reason: msg };
+      }
     }
 
     // ── Step 7 : Payment — create x402 fetch with burner key ──
@@ -267,6 +297,7 @@ export class Gateway {
         policy: decision,
         status: "approved",
         txHash,
+        agentId: opts?.agentId,
       };
       this.paymentHistory.push(record);
     }
