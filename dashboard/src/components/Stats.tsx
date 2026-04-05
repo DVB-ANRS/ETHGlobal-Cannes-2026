@@ -4,10 +4,9 @@ interface Props {
   ledger: number
   denied: number
   spent: number
-  maxDay: number
 }
 
-export default function Stats({ total, auto, ledger, denied, spent, maxDay }: Props) {
+export default function Stats({ total, auto, ledger, denied, spent }: Props) {
   return (
     <div className="stats">
       <div className="stat-card">
@@ -19,25 +18,25 @@ export default function Stats({ total, auto, ledger, denied, spent, maxDay }: Pr
       <div className="stat-card">
         <div className="stat-label">Auto-Approved</div>
         <div className="stat-value c-green">{auto}</div>
-        <div className="stat-sub">Below threshold</div>
+        <div className="stat-sub">≤ $1.00 · no cap</div>
       </div>
 
       <div className="stat-card">
         <div className="stat-label">Ledger Required</div>
         <div className="stat-value c-amber">{ledger}</div>
-        <div className="stat-sub">Hardware confirm</div>
+        <div className="stat-sub">≥ $1.00 hardware confirm</div>
       </div>
 
       <div className="stat-card">
         <div className="stat-label">Denied / Rejected</div>
         <div className="stat-value c-red">{denied}</div>
-        <div className="stat-sub">Blocked by policy</div>
+        <div className="stat-sub">Below $0.10 · above $2.00</div>
       </div>
 
       <div className="stat-card">
         <div className="stat-label">Spent Today</div>
         <div className="stat-value">${spent.toFixed(2)}</div>
-        <div className="stat-sub">of ${maxDay.toFixed(2)} daily limit</div>
+        <div className="stat-sub">USDC approved</div>
       </div>
     </div>
   )
