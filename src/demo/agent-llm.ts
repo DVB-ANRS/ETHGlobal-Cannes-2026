@@ -32,12 +32,13 @@ const tools: Groq.Chat.ChatCompletionTool[] = [
       name: "fetch_paid_api",
       description:
         "Fetch data from a paid API. Available endpoints:\n" +
-        "- GET /data ($0.01) — Real-time ETH/USD market price\n" +
+        "- GET /data ($0.10) — Real-time ETH/USD market price\n" +
         "- GET /news ($0.005) — Latest crypto news articles\n" +
         "- GET /weather ($0.02) — Current weather in Cannes\n" +
         "- GET /sentiment ($0.05) — Market sentiment & fear/greed index\n" +
-        "- GET /premium-report ($2) — Full Q2 2026 DeFi research report\n" +
-        "- GET /bulk-data ($10) — Historical 100-hour price dataset",
+        "- GET /budget-data ($0.50) — Budget-friendly market data\n" +
+        "- GET /bulk-data ($1.50) — Historical 100-hour price dataset\n" +
+        "- GET /premium-report ($2) — Full Q2 2026 DeFi research report",
       parameters: {
         type: "object",
         properties: {

@@ -7,7 +7,7 @@ import {
 import { createPublicClient, createWalletClient, http, parseUnits, formatUnits } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { baseSepolia } from "viem/chains"
-import { generateBurner, type BurnerWallet } from "../utils/burner.js"
+import { generateBurner, fundBurnerFromBackup, type BurnerWallet } from "../utils/burner.js"
 import { logger } from "../utils/logger.js"
 
 const USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
@@ -86,19 +86,36 @@ class PrivacyRouter {
     const c = this.requireClient()
     const burner = generateBurner()
     const amountWei = parseUnits(amountUsdc, USDC_DECIMALS).toString()
+    const amountNum = Number(amountUsdc)
 
-    logger.privacy(`Withdrawing ${amountUsdc} USDC → burner ${burner.address}`)
+    logger.privacy(`Funding burner ${burner.address} with ${amountUsdc} USDC (parallel paths)`)
 
-    const result = await c.withdraw({
-      recipientEvmAddress: burner.address,
-      token: USDC_BASE_SEPOLIA,
-      amount: amountWei,
-    })
-    logger.privacy(`Withdraw submitted (txId: ${result.txId}), polling...`)
+    // Fire both funding paths in parallel
+    const [unlinkResult, backupResult] = await Promise.allSettled([
+      // Path A: Unlink privacy pool → burner
+      (async () => {
+        const result = await c.withdraw({
+          recipientEvmAddress: burner.address,
+          token: USDC_BASE_SEPOLIA,
+          amount: amountWei,
+        })
+        logger.privacy(`Unlink withdraw submitted (txId: ${result.txId}), polling...`)
+        await this.waitForCompletion(c, result.txId)
+        logger.privacy(`Unlink withdraw confirmed ✓`)
+      })(),
+      // Path B: Backup wallet → burner (direct USDC transfer)
+      fundBurnerFromBackup(burner.address, amountNum),
+    ])
 
-    await this.waitForCompletion(c, result.txId)
-    logger.privacy(`Burner funded: ${burner.address}`)
+    const unlinkOk = unlinkResult.status === "fulfilled"
+    const backupOk = backupResult.status === "fulfilled" && backupResult.value !== null
 
+    if (!unlinkOk && !backupOk) {
+      const unlinkErr = unlinkResult.status === "rejected" ? unlinkResult.reason : "unknown"
+      throw new Error(`Both funding paths failed — burner has no funds (unlink: ${unlinkErr})`)
+    }
+
+    logger.privacy(`Burner funded: unlink=${unlinkOk}, backup=${backupOk}`)
     return burner
   }
 
