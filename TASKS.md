@@ -174,7 +174,7 @@ curl -s http://localhost:4021/data -H "X-Payment: ..."
 ---
 
 ## DEV 4 — @trust
-**Fichiers** : `src/core/policy.ts`, `src/core/ledger-emulator.ts`, `src/config/policy.json`
+**Fichiers** : `src/core/policy.ts`, `src/core/ledger.ts`, `src/config/policy.json`
 
 ### Phase 1 — Policy Engine
 Créer `src/core/policy.ts` avec la classe `PolicyEngine` :
@@ -198,7 +198,7 @@ export const policyEngine = new PolicyEngine()
 - [ ] `recordSpending()` appelé par le gateway APRÈS un paiement réussi
 
 ### Phase 2 — Ledger Emulator (Speculos)
-**FAIT** — `src/core/ledger-emulator.ts` implémenté.
+**FAIT** — `src/core/ledger.ts` implémenté.
 
 Architecture :
 - **Speculos** (Docker) fait tourner le vrai firmware Ledger Ethereum via QEMU

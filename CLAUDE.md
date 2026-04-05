@@ -65,7 +65,7 @@ src/
 │   ├── policy.ts              # Policy Engine : auto / ledger / denied
 │   ├── privacy.ts             # Unlink SDK : deposit, withdraw vers burner
 │   ├── payment.ts             # x402 client : createX402Fetch(burnerKey)
-│   └── ledger-emulator.ts     # Speculos emulator : requestApproval via dashboard + real signing
+│   └── ledger.ts              # Speculos emulator : requestApproval via dashboard + real signing
 ├── utils/
 │   ├── burner.ts              # generateBurner() + fundBurnerFromBackup() (viem ERC-20 transfer)
 │   ├── config.ts              # Chargement .env + validation
@@ -89,7 +89,7 @@ src/
 | Dev 1 | `@backend` | `server.ts`, `routes/`, `core/gateway.ts`, `types/`, `utils/config.ts`, `utils/logger.ts` |
 | Dev 2 | `@privacy` | `core/privacy.ts`, `utils/burner.ts` |
 | Dev 3 | `@payment` | `core/payment.ts`, `mock/x402-server.ts`, `demo/agent-sim.ts` |
-| Dev 4 | `@trust` | `core/policy.ts`, `core/ledger-emulator.ts`, `config/policy.json`, dashboard LedgerModal |
+| Dev 4 | `@trust` | `core/policy.ts`, `core/ledger.ts`, `config/policy.json`, dashboard LedgerModal |
 
 **Si tu dois modifier le fichier d'un autre → prévenir d'abord sur Slack/Discord. Merge sur `main` uniquement quand le module tourne en isolation.**
 
