@@ -46,7 +46,8 @@ GATEWAY_PORT=3000
 DEFAULT_MAX_PER_TX=2
 BACKUP_BURNER_PRIVATE_KEY=  # Optionnel — wallet de backup qui fund les burners en parallèle du pool Unlink
 LEDGER_MODE=speculos      # speculos | terminal (default: speculos)
-SPECULOS_API_URL=http://127.0.0.1:5000  # Speculos HTTP API
+SPECULOS_HOST=http://127.0.0.1          # Speculos base URL
+SPECULOS_API_PORT=5001                  # Speculos HTTP API port
 ```
 
 ---

@@ -202,7 +202,7 @@ export const policyEngine = new PolicyEngine()
 
 Architecture :
 - **Speculos** (Docker) fait tourner le vrai firmware Ledger Ethereum via QEMU
-- **Backend** se connecte à Speculos via `@ledgerhq/hw-transport-node-speculos-http` (port 5000)
+- **Backend** se connecte à Speculos via `@ledgerhq/hw-transport-node-speculos-http` (port 5001)
 - **Dashboard** affiche un modal Approve/Reject (composant `LedgerModal`)
 - Quand l'utilisateur clique **Approve** → le backend signe un message via `eth.signPersonalMessage()` sur Speculos (preuve crypto réelle) → resolve "approved"
 - Quand l'utilisateur clique **Reject** → resolve "rejected" immédiat, aucun fonds dépensé
