@@ -1,5 +1,7 @@
 # SecretPay
 
+**Live demo: [https://secretpay.vercel.app](https://secretpay.vercel.app/)**
+
 ## Built for ETHGlobal Cannes 2026
 
 SecretPay was built during **ETHGlobal Cannes 2026** (April 4-5, 2026), targeting three bounties: **AI Agents x Ledger** ($6,000), **Best Private Application** ($3,000), and **Best Agentic Economy with Nanopayments** ($6,000). We wanted to answer a simple question: why does every AI agent payment leave a permanent, public trace on-chain?
