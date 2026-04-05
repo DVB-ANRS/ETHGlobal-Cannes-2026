@@ -27,7 +27,7 @@ router.post("/agents/create", (req, res) => {
     name,
     llmApiKey,
     task,
-    gatewayUrl: `http://localhost:${process.env.GATEWAY_PORT ?? "3000"}`,
+    gatewayUrl: `http://localhost:${process.env.PORT ?? process.env.GATEWAY_PORT ?? "3000"}`,
     mockApiUrl: `http://localhost:${process.env.MOCK_SERVER_PORT ?? "4021"}`,
   });
 
