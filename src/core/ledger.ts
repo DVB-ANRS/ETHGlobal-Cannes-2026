@@ -1,5 +1,9 @@
-import SpeculosHttpTransport from "@ledgerhq/hw-transport-node-speculos-http";
-import AppEth from "@ledgerhq/hw-app-eth";
+import SpeculosHttpTransportModule from "@ledgerhq/hw-transport-node-speculos-http";
+import AppEthModule from "@ledgerhq/hw-app-eth";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SpeculosHttpTransport = (SpeculosHttpTransportModule as any).default ?? SpeculosHttpTransportModule;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AppEth = (AppEthModule as any).default ?? AppEthModule;
 import type { Express, Request, Response } from "express";
 import * as readline from "node:readline";
 import { hashMessage, recoverAddress } from "viem";
@@ -35,8 +39,10 @@ export interface LedgerBridge {
 // ─── LedgerEmulator ─────────────────────────────────────────────────────────
 
 export class LedgerEmulator implements LedgerBridge {
-  private transport: InstanceType<typeof SpeculosHttpTransport> | null = null;
-  private eth: InstanceType<typeof AppEth> | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private transport: any = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private eth: any = null;
   private speculosConnected = false;
   private pendingApproval: PendingApproval | null = null;
   private ledgerAddress: string | null = null;

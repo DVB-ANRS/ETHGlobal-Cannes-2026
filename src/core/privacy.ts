@@ -12,7 +12,7 @@ import { logger } from "../utils/logger.js"
 
 const USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
 const USDC_DECIMALS = 6
-const ENGINE_URL = "https://staging-api.unlink.xyz"
+const ENGINE_URL = process.env.UNLINK_API_URL ?? "https://staging-api.unlink.xyz"
 const TERMINAL_STATES = new Set(["relayed", "processed"])
 
 interface InitParams {

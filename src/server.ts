@@ -33,20 +33,36 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: "Internal server error" });
 });
 
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+function validateEnv() {
+  const required = ["UNLINK_API_KEY", "AGENT_MNEMONIC", "EVM_PRIVATE_KEY"];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length) {
+    throw new Error(`Missing required env vars: ${missing.join(", ")}`);
+  }
+}
+
 // ── Initialize modules then start server ──
 async function start() {
+  validateEnv();
+
   // Payment module has no async init — wire it unconditionally
   gateway.setPayment({ createPaymentFetch });
   logger.info("Payment module wired ✓");
 
-  // Ledger emulator
-  try {
-    await ledgerEmulator.init();
-    gateway.setLedger(ledgerEmulator);
-    logger.info("Ledger emulator initialized");
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    logger.error(`Ledger init failed: ${msg} — running with stub ledger`);
+  // Ledger emulator — disabled in production (Speculos requires Docker)
+  if (!IS_PRODUCTION) {
+    try {
+      await ledgerEmulator.init();
+      gateway.setLedger(ledgerEmulator);
+      logger.info("Ledger emulator initialized");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`Ledger init failed: ${msg} — running with stub ledger`);
+    }
+  } else {
+    logger.info("Ledger disabled in production — using stub ledger");
   }
 
   try {

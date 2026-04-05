@@ -44,9 +44,6 @@ importers:
       groq-sdk:
         specifier: ^1.1.2
         version: 1.1.2
-      tsx:
-        specifier: ^4.21.0
-        version: 4.21.0
       viem:
         specifier: ^2.47.10
         version: 2.47.10(typescript@6.0.2)(zod@3.25.76)
@@ -60,6 +57,9 @@ importers:
       '@types/node':
         specifier: ^25.5.2
         version: 25.5.2
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
       typescript:
         specifier: ^6.0.2
         version: 6.0.2

@@ -139,7 +139,7 @@ interface RunConfig {
   task: string;
 }
 
-const MOCK_BASE = "http://localhost:4021";
+const MOCK_BASE = process.env.MOCK_SERVER_URL ?? "http://localhost:4021";
 
 router.post("/agent/run", async (req, res) => {
   const config = req.body as RunConfig;
@@ -206,7 +206,8 @@ async function runUseCase({ label, url, expectedPolicy }: { label: string; url: 
   pushLog("Gateway", `POST /agent/request { url: "${url}" }`, "info");
 
   try {
-    const res = await fetch("http://localhost:3000/agent/request", {
+    const gatewayBase = process.env.GATEWAY_INTERNAL_URL ?? `http://localhost:${process.env.PORT ?? process.env.GATEWAY_PORT ?? "3000"}`;
+    const res = await fetch(`${gatewayBase}/agent/request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),

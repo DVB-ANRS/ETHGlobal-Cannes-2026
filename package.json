@@ -2,6 +2,7 @@
   "name": "secretpay",
   "version": "1.0.0",
   "description": "Private payment middleware for AI agents — ETHGlobal Cannes 2026",
+  "type": "module",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx src/server.ts",
@@ -9,7 +10,8 @@
     "demo": "tsx src/demo/agent-sim.ts",
     "agent": "tsx src/demo/agent-llm.ts",
     "deposit": "tsx scripts/deposit.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",
@@ -28,13 +30,13 @@
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "groq-sdk": "^1.1.2",
-    "tsx": "^4.21.0",
     "viem": "^2.47.10"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.2",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }
 }

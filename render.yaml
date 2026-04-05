@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: secretpay-gateway
+    runtime: node
+    buildCommand: npx pnpm install && npx pnpm build
+    startCommand: node dist/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: UNLINK_API_KEY
+        sync: false
+      - key: AGENT_MNEMONIC
+        sync: false
+      - key: EVM_PRIVATE_KEY
+        sync: false
+      - key: BASE_SEPOLIA_RPC_URL
+        value: https://sepolia.base.org
+      - key: UNLINK_API_URL
+        value: https://staging-api.unlink.xyz
+      - key: DEFAULT_MAX_PER_TX
+        value: "2"
