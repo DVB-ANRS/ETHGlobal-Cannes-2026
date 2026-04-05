@@ -1,20 +1,18 @@
 interface Props {
   balance: string | null
+  onBack: () => void
 }
 
-export default function Header({ balance }: Props) {
+export default function Header({ balance, onBack }: Props) {
   const fmt = balance !== null
     ? `$${parseFloat(balance).toFixed(2)} USDC`
     : null
 
   return (
     <header className="header">
+      <button className="header-back" onClick={onBack}>← Back</button>
       <div className="logo">
-        <div className="logo-mark">SP</div>
-        <div>
-          <div className="logo-name">SecretPay</div>
-          <div className="logo-sub">Privacy-first payments for AI agents</div>
-        </div>
+        <img src="/secret_pay.png" alt="SecretPay" className="header-logo-img" />
       </div>
 
       <div className="header-sep" />

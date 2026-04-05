@@ -4,7 +4,13 @@
       "Bash(npx tsc:*)",
       "Bash(pnpm exec:*)",
       "Bash(node_modules/.bin/tsc --noEmit)",
-      "WebFetch(domain:www.kiln.fi)"
+      "WebFetch(domain:www.kiln.fi)",
+      "Bash(pnpm add:*)",
+      "Bash(npm add:*)",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\alger\\\\OneDrive\\\\Desktop\\\\ETHGlobal-Cannes-2026\\\\dashboard && pnpm add motion 2>&1\")",
+      "Bash(cmd /c \"type C:\\\\Users\\\\alger\\\\OneDrive\\\\Desktop\\\\ETHGlobal-Cannes-2026\\\\dashboard\\\\package.json\")",
+      "Bash(powershell -Command \"Set-Location 'C:\\\\Users\\\\alger\\\\OneDrive\\\\Desktop\\\\ETHGlobal-Cannes-2026\\\\dashboard'; pnpm add motion; Write-Output 'DONE'\")",
+      "Bash(powershell -Command \"where.exe node; where.exe npm; where.exe npx\")"
     ]
   }
 }
