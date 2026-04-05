@@ -17,7 +17,6 @@ export const appConfig = {
   mockServerPort: parseInt(optional("MOCK_SERVER_PORT", "4021")),
   rpcUrl: optional("BASE_SEPOLIA_RPC_URL", "https://sepolia.base.org"),
   maxPerTx: parseFloat(optional("DEFAULT_MAX_PER_TX", "2")),
-  maxPerDay: parseFloat(optional("DEFAULT_MAX_PER_DAY", "10")),
   backupBurnerPrivateKey: process.env.BACKUP_BURNER_PRIVATE_KEY
     ? (`0x${process.env.BACKUP_BURNER_PRIVATE_KEY.replace(/^0x/, "")}` as `0x${string}`)
     : null,

@@ -44,7 +44,6 @@ MOCK_RECEIVER_ADDRESS=   # Adresse receiver du mock server
 MOCK_RECEIVER_PRIVATE_KEY=
 GATEWAY_PORT=3000
 DEFAULT_MAX_PER_TX=2
-DEFAULT_MAX_PER_DAY=10
 BACKUP_BURNER_PRIVATE_KEY=  # Optionnel — wallet de backup qui fund les burners en parallèle du pool Unlink
 LEDGER_ORIGIN_TOKEN=     # Optionnel
 ```
@@ -72,7 +71,7 @@ src/
 ├── types/
 │   └── index.ts               # AgentRequest, AgentResponse, PaymentRecord, PolicyDecision
 ├── config/
-│   └── policy.json            # maxPerTransaction:2, maxPerDay:10, floor:0.1, blacklist:[]
+│   └── policy.json            # maxPerTransaction:2, floor:0.1, blacklist:[]
 ├── mock/
 │   └── x402-server.ts         # API payante simulée (port 4021)
 └── demo/
@@ -141,7 +140,6 @@ withdrawToBurner(amount)
 ```json
 {
   "maxPerTransaction": 2,
-  "maxPerDay": 10,
   "allowedRecipients": [],
   "blockedRecipients": []
 }
@@ -154,7 +152,8 @@ withdrawToBurner(amount)
 | Floor (minimum) | $0.10 | En dessous → `"denied"` |
 | Cap / hard cap | $2.00 | Au dessus → `"denied"` |
 | Seuil Ledger | $1.00 | `>= $1` → `"ledger"` (approbation hardware) |
-| Budget journalier | $10.00 | Cumul jour > $10 → `"ledger"` |
+
+Pas de limite quotidienne — toutes les transactions passent tant qu'elles respectent le floor/cap.
 
 ### Logique d'évaluation (ordre de priorité)
 
@@ -163,7 +162,6 @@ if amount < 0.10          → "denied" (en dessous du minimum)
 if amount > 2.00          → "denied" (au dessus du cap)
 if recipient blacklisté   → "denied"
 if amount >= 1.00         → "ledger"
-if dailySpend + amount > 10 → "ledger"
 else                       → "auto"
 ```
 
@@ -176,8 +174,7 @@ else                       → "auto"
 | 1 | Auto-approve | `GET /data` | $0.10 | 200 + log AUTO-APPROVE |
 | 2 | Ledger approve | `GET /bulk-data` | $1.50 | Ledger prompt → approve → 200 |
 | 3 | Ledger reject | `GET /bulk-data` | $1.50 | Ledger prompt → reject → 403 |
-| 4 | Budget jour | 20× `/budget-data` | $0.50×20 | Bascule en "ledger" à $10 |
-| 5 | Blacklist | URL blacklistée | - | 403 "denied" immédiat |
+| 4 | Blacklist | URL blacklistée | - | 403 "denied" immédiat |
 
 ---
 

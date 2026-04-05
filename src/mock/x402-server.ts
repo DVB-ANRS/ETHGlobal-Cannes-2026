@@ -47,15 +47,6 @@ const routes = {
     },
     description: "Historical bulk dataset",
   },
-  "GET /budget-data": {
-    accepts: {
-      scheme: "exact" as const,
-      network: "eip155:84532" as const,
-      payTo: appConfig.mockReceiverAddress as `0x${string}`,
-      price: "$0.50",
-    },
-    description: "Budget test endpoint",
-  },
 };
 
 // 4. Apply x402 payment middleware before route handlers
@@ -104,16 +95,6 @@ app.get("/bulk-data", (_req, res) => {
   res.json({ data, count: data.length });
 });
 
-app.get("/budget-data", (_req, res) => {
-  logger.payment("Serving /budget-data (paid $0.50)");
-  res.json({
-    symbol: "ETH/USD",
-    price: 3847.52,
-    timestamp: new Date().toISOString(),
-    source: "SecretPay Mock API — Budget endpoint",
-  });
-});
-
 // 6. Health check (not paywalled)
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "x402-mock-api" });
@@ -124,6 +105,6 @@ app.listen(appConfig.mockServerPort, () => {
   logger.info(`x402 Mock API running on :${appConfig.mockServerPort}`);
   logger.payment(`Receiver: ${appConfig.mockReceiverAddress}`);
   logger.payment(
-    "Endpoints: GET /data ($0.10), GET /news ($0.005), GET /bulk-data ($1.50), GET /budget-data ($0.50)"
+    "Endpoints: GET /data ($0.10), GET /news ($0.005), GET /bulk-data ($1.50)"
   );
 });
