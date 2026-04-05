@@ -68,7 +68,7 @@ router.get("/agent/policy", (_req, res) => {
     const raw = readFileSync(join(__dirname, "../config/policy.json"), "utf-8");
     res.json(JSON.parse(raw));
   } catch {
-    res.json({ maxPerTransaction: 5, maxPerDay: 50, allowedRecipients: [], blockedRecipients: [] });
+    res.json({ maxPerTransaction: 2, allowedRecipients: [], blockedRecipients: [] });
   }
 });
 

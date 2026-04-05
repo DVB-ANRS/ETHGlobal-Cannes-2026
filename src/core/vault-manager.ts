@@ -103,20 +103,6 @@ async function waitForCompletion(client: UnlinkClient, txId: string): Promise<vo
   throw new Error(`Transaction ${txId} stuck`);
 }
 
-// ─── Daily spend reset ──────────────────────────────────────────────
-
-function todayISO(): string {
-  return new Date().toISOString().split("T")[0];
-}
-
-function resetDailyIfNeeded(agent: AgentPolicy): void {
-  const today = todayISO();
-  if (agent.lastResetDate !== today) {
-    agent.spentToday = 0;
-    agent.lastResetDate = today;
-  }
-}
-
 // ─── Public API ─────────────────────────────────────────────────────
 
 export const vaultManager = {
@@ -195,7 +181,7 @@ export const vaultManager = {
   addAgent(
     walletAddress: string,
     agentAddress: string,
-    policy: { label?: string; maxPerTx?: number; maxPerDay?: number }
+    policy: { label?: string; maxPerTx?: number }
   ): AgentPolicy {
     const addr = walletAddress.toLowerCase();
     const agentAddr = agentAddress.toLowerCase();
@@ -205,9 +191,6 @@ export const vaultManager = {
       agentAddress: agentAddr,
       label: policy.label,
       maxPerTx: policy.maxPerTx ?? appConfig.maxPerTx,
-      maxPerDay: policy.maxPerDay ?? appConfig.maxPerDay,
-      spentToday: 0,
-      lastResetDate: todayISO(),
     };
 
     vault.agents.set(agentAddr, agentPolicy);
@@ -249,7 +232,6 @@ export const vaultManager = {
     const policy = vault.agents.get(agentAddr);
     if (!policy) return null;
 
-    resetDailyIfNeeded(policy);
     return { client, policy, walletAddress: ownerAddr };
   },
 
@@ -269,12 +251,6 @@ export const vaultManager = {
         `Amount $${amountUsdc} exceeds agent limit $${policy.maxPerTx}/tx`
       );
     }
-    if (policy.spentToday + amount > policy.maxPerDay) {
-      throw new Error(
-        `Daily limit reached: spent $${policy.spentToday.toFixed(2)}, limit $${policy.maxPerDay}/day`
-      );
-    }
-
     // Check balance before attempting withdraw
     const balance = await getBalance(client);
     if (parseFloat(balance) < amount) {
@@ -295,9 +271,6 @@ export const vaultManager = {
 
     await waitForCompletion(client, result.txId);
     logger.privacy(`Burner funded: ${burner.address}`);
-
-    // Record spending
-    policy.spentToday += amount;
 
     return burner;
   },
