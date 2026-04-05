@@ -25,7 +25,7 @@ const routes = {
       scheme: "exact" as const,
       network: "eip155:84532" as const,
       payTo: appConfig.mockReceiverAddress as `0x${string}`,
-      price: "$0.01",
+      price: "$0.10",
     },
     description: "Real-time market data",
   },
@@ -43,7 +43,7 @@ const routes = {
       scheme: "exact" as const,
       network: "eip155:84532" as const,
       payTo: appConfig.mockReceiverAddress as `0x${string}`,
-      price: "$10",
+      price: "$1.50",
     },
     description: "Historical bulk dataset",
   },
@@ -56,7 +56,7 @@ app.use(
 
 // 5. Route handlers — only reached after payment is verified
 app.get("/data", (_req, res) => {
-  logger.payment("Serving /data (paid $0.01)");
+  logger.payment("Serving /data (paid $0.10)");
   res.json({
     symbol: "ETH/USD",
     price: 3847.52,
@@ -84,7 +84,7 @@ app.get("/news", (_req, res) => {
 });
 
 app.get("/bulk-data", (_req, res) => {
-  logger.payment("Serving /bulk-data (paid $10)");
+  logger.payment("Serving /bulk-data (paid $1.50)");
   const data = Array.from({ length: 100 }, (_, i) => ({
     id: i + 1,
     pair: "ETH/USD",
@@ -105,6 +105,6 @@ app.listen(appConfig.mockServerPort, () => {
   logger.info(`x402 Mock API running on :${appConfig.mockServerPort}`);
   logger.payment(`Receiver: ${appConfig.mockReceiverAddress}`);
   logger.payment(
-    "Endpoints: GET /data ($0.01), GET /news ($0.005), GET /bulk-data ($10)"
+    "Endpoints: GET /data ($0.10), GET /news ($0.005), GET /bulk-data ($1.50)"
   );
 });

@@ -1,6 +1,5 @@
 {
-  "maxPerTransaction": 5,
-  "maxPerDay": 50,
+  "maxPerTransaction": 2,
   "allowedRecipients": [],
   "blockedRecipients": []
 }
