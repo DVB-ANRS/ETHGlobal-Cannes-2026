@@ -17,7 +17,7 @@ SecretPay est un **middleware backend Node.js/TypeScript** qui s'intercale entre
 - **Blockchain** : viem — Base Sepolia uniquement (chain ID 84532)
 - **Privacy** : `@unlink-xyz/sdk` — pool ZK, burner wallets jetables
 - **Paiements** : `@x402/fetch` + `@x402/evm` + `@x402/core` + `@x402/server`
-- **Hardware** : `@ledgerhq/device-management-kit` + `@ledgerhq/device-signer-kit-ethereum`
+- **Ledger Emulator** : Speculos (Docker) + `@ledgerhq/hw-transport-node-speculos-http` + `@ledgerhq/hw-app-eth` — émulateur officiel Ledger, approve/reject via le dashboard React
 - **Package manager** : pnpm
 
 ---
@@ -45,7 +45,8 @@ MOCK_RECEIVER_PRIVATE_KEY=
 GATEWAY_PORT=3000
 DEFAULT_MAX_PER_TX=2
 BACKUP_BURNER_PRIVATE_KEY=  # Optionnel — wallet de backup qui fund les burners en parallèle du pool Unlink
-LEDGER_ORIGIN_TOKEN=     # Optionnel
+LEDGER_MODE=speculos      # speculos | terminal (default: speculos)
+SPECULOS_API_URL=http://127.0.0.1:5000  # Speculos HTTP API
 ```
 
 ---
@@ -63,7 +64,7 @@ src/
 │   ├── policy.ts              # Policy Engine : auto / ledger / denied
 │   ├── privacy.ts             # Unlink SDK : deposit, withdraw vers burner
 │   ├── payment.ts             # x402 client : createX402Fetch(burnerKey)
-│   └── ledger.ts              # Ledger DMK : connect, requestApproval, disconnect
+│   └── ledger-emulator.ts     # Speculos emulator : requestApproval via dashboard + real signing
 ├── utils/
 │   ├── burner.ts              # generateBurner() + fundBurnerFromBackup() (viem ERC-20 transfer)
 │   ├── config.ts              # Chargement .env + validation
@@ -87,7 +88,7 @@ src/
 | Dev 1 | `@backend` | `server.ts`, `routes/`, `core/gateway.ts`, `types/`, `utils/config.ts`, `utils/logger.ts` |
 | Dev 2 | `@privacy` | `core/privacy.ts`, `utils/burner.ts` |
 | Dev 3 | `@payment` | `core/payment.ts`, `mock/x402-server.ts`, `demo/agent-sim.ts` |
-| Dev 4 | `@trust` | `core/policy.ts`, `core/ledger.ts`, `config/policy.json`, dashboard (optionnel) |
+| Dev 4 | `@trust` | `core/policy.ts`, `core/ledger-emulator.ts`, `config/policy.json`, dashboard LedgerModal |
 
 **Si tu dois modifier le fichier d'un autre → prévenir d'abord sur Slack/Discord. Merge sur `main` uniquement quand le module tourne en isolation.**
 
@@ -101,7 +102,7 @@ src/
 3. Si 402 → extraire prix + destinataire
 4. policy.evaluate(prix, destinataire) → auto | ledger | denied
 5. Si denied → retourner 403
-6. Si ledger → ledger.requestApproval() → attendre approve/reject
+6. Si ledger → ledgerEmulator.requestApproval() → notifie le dashboard, attend approve/reject du user dans le navigateur
 7. privacy.withdrawToBurner(montant) → funding parallèle (voir ci-dessous)
 8. payment.createX402Fetch(burnerPrivateKey) → fetch wrapper
 9. Retenter la requête → l'API sert les données
@@ -192,8 +193,8 @@ else                       → "auto"
 - Tag soumission : "Agentic Economy with Nanopayments"
 
 ### Track Ledger — $6,000
-- `@ledgerhq/device-management-kit` utilisé
-- Human-in-the-loop : approve/reject fonctionnel
+- Speculos emulator (officiel Ledger) via Docker avec `@ledgerhq/hw-transport-node-speculos-http` + `@ledgerhq/hw-app-eth`
+- Human-in-the-loop : approve/reject dans le dashboard React, signature réelle via Speculos (`signPersonalMessage`)
 - Clear Signing JSON (ERC-7730) créé pour type `AgentPayment`
 - Section "DX Feedback" dans le README (obligatoire)
 
@@ -241,7 +242,7 @@ GET  /health          → { status: "ok" }
 |----------|----------|
 | Unlink SDK bloqué | Simuler le pool : transfers directs viem + documenter le workaround |
 | x402 facilitator down | Self-host depuis le repo coinbase/x402 |
-| Ledger USB instable | BLE → Speculos (simulateur) → montrer le code dans la vidéo |
+| Speculos Docker down | Fallback : LEDGER_MODE=terminal (readline) — approve/reject sans signature |
 | Withdraw trop lent | Parallel funding : backup wallet envoie USDC au burner en même temps que le pool Unlink |
 | Réseau saturé | Même mécanisme — le transfert direct backup→burner passe même si le pool est lent |
 | Flow E2E cassé à H14 | Scope réduit : juste auto-approve. Ledger = demo séparée |

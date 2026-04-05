@@ -174,7 +174,7 @@ curl -s http://localhost:4021/data -H "X-Payment: ..."
 ---
 
 ## DEV 4 — @trust
-**Fichiers** : `src/core/policy.ts`, `src/core/ledger.ts`, `src/config/policy.json`
+**Fichiers** : `src/core/policy.ts`, `src/core/ledger-emulator.ts`, `src/config/policy.json`
 
 ### Phase 1 — Policy Engine
 Créer `src/core/policy.ts` avec la classe `PolicyEngine` :
@@ -186,24 +186,9 @@ class PolicyEngine {
   private lastReset: Date = new Date()
 
   loadConfig(): void
-  // → lire src/config/policy.json
-  // → charger dans this.config
-
   evaluate(amount: number, recipient: string): PolicyDecision
-  // Logique dans cet ordre :
-  // 1. recipient dans config.blockedRecipients → "denied"
-  // 2. amount > 100 (hard cap absolu) → "denied"
-  // 3. config.allowedRecipients non vide ET recipient pas dedans → "ledger"
-  // 4. dailySpent + amount > config.maxPerDay → "ledger"
-  // 5. amount > config.maxPerTransaction → "ledger"
-  // 6. sinon → "auto"
-
   recordSpending(amount: number): void
-  // → this.dailySpent += amount
-  // → logger.policy(`Daily spent: $${this.dailySpent}`)
-
   private checkDailyReset(): void
-  // → si dernier reset > 24h → remettre dailySpent à 0
 }
 
 export const policyEngine = new PolicyEngine()
@@ -212,38 +197,37 @@ export const policyEngine = new PolicyEngine()
 - [ ] Logger chaque décision : `logger.policy("$0.01 < $5 threshold → AUTO-APPROVE")`
 - [ ] `recordSpending()` appelé par le gateway APRÈS un paiement réussi
 
-### Phase 2 — Ledger Bridge
-Créer `src/core/ledger.ts` avec la classe `LedgerBridge` :
+### Phase 2 — Ledger Emulator (Speculos)
+**FAIT** — `src/core/ledger-emulator.ts` implémenté.
 
-```typescript
-class LedgerBridge {
-  async connect(): Promise<void>
-  // → DeviceManagementKit.startDiscovering()
-  // → attendre qu'un device soit trouvé
-  // → ouvrir une session
+Architecture :
+- **Speculos** (Docker) fait tourner le vrai firmware Ledger Ethereum via QEMU
+- **Backend** se connecte à Speculos via `@ledgerhq/hw-transport-node-speculos-http` (port 5000)
+- **Dashboard** affiche un modal Approve/Reject (composant `LedgerModal`)
+- Quand l'utilisateur clique **Approve** → le backend signe un message via `eth.signPersonalMessage()` sur Speculos (preuve crypto réelle) → resolve "approved"
+- Quand l'utilisateur clique **Reject** → resolve "rejected" immédiat, aucun fonds dépensé
 
-  async requestApproval(details: {
-    amount: string
-    recipient: string
-    service: string
-  }): Promise<"approved" | "rejected">
-  // → afficher les détails sur le Ledger (Clear Signing)
-  // → attendre l'action de l'opérateur
-  // → retourner "approved" ou "rejected"
+Routes Express exposées :
+- `GET /ledger/pending` → tx en attente ou null
+- `POST /ledger/approve` → approuve + signe via Speculos
+- `POST /ledger/reject` → rejette
+- `GET /ledger/status` → état de la connexion Speculos
 
-  async disconnect(): Promise<void>
-}
+Modes :
+- `LEDGER_MODE=speculos` (défaut) : full integration Speculos + dashboard
+- `LEDGER_MODE=terminal` : readline dans le terminal (fallback sans Docker)
 
-export const ledgerBridge = new LedgerBridge()
+Lancer Speculos :
+```bash
+./scripts/start-speculos.sh
 ```
 
-**Note importante** : Le Ledger DMK utilise WebHID qui ne marche que dans un browser.
-- Option A (propre) : mini dashboard HTML avec pont WebSocket → backend
-- Option B (demo) : mock `requestApproval()` qui attend une touche Enter dans le terminal
-- Option C (si Ledger physique impossible) : Speculos (simulateur)
-
-- [ ] **Commencer par l'Option B** (mock terminal) pour débloquer l'intégration
-- [ ] Upgrader vers Option A si le temps le permet
+- [x] `requestApproval()` crée un pending, expose via API, attend le clic utilisateur
+- [x] Approve → `signPersonalMessage` via Speculos (signature réelle)
+- [x] Reject → résolution immédiate, zéro fonds dépensés
+- [x] Timeout 120s → auto-reject
+- [x] Dashboard `LedgerModal` intégré (poll /ledger/pending toutes les 2s)
+- [ ] Tester E2E avec Speculos Docker tournant
 
 ### Phase 3 — Clear Signing JSON (track Ledger)
 Créer `src/config/erc7730.json` :
@@ -300,5 +284,5 @@ pnpm tsx scripts/test-policy.ts
 |---------|---------------------|
 | Unlink SDK ne fonctionne pas | Simuler avec un transfer viem direct (`sendTransaction`) |
 | x402 facilitator down | Self-host : `pnpm tsx node_modules/@x402/...` |
-| Ledger WebHID impossible | Mock terminal : `readline.question("Approve? [y/n]")` |
+| Speculos Docker down | `LEDGER_MODE=terminal` → readline fallback sans signature |
 | Withdraw trop lent | Pré-fund 3 burners au démarrage du gateway |

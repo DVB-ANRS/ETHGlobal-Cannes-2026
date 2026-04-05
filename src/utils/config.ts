@@ -21,6 +21,12 @@ export const appConfig = {
     ? (`0x${process.env.BACKUP_BURNER_PRIVATE_KEY.replace(/^0x/, "")}` as `0x${string}`)
     : null,
 
+  // Ledger / Speculos
+  ledgerMode: optional("LEDGER_MODE", "speculos") as "speculos" | "terminal",
+  speculosHost: optional("SPECULOS_HOST", "http://127.0.0.1"),
+  speculosApiPort: optional("SPECULOS_API_PORT", "5001"),
+  get speculosApiUrl() { return `${this.speculosHost}:${this.speculosApiPort}`; },
+
   get unlinkApiKey() { return require("UNLINK_API_KEY"); },
   get agentMnemonic() { return require("AGENT_MNEMONIC"); },
   get agentEvmPrivateKey() { return require("EVM_PRIVATE_KEY") as `0x${string}`; },

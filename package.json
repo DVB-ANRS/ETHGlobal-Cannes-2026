@@ -19,6 +19,8 @@
     "@ledgerhq/device-management-kit": "^1.2.0",
     "@ledgerhq/device-signer-kit-ethereum": "^1.13.0",
     "@ledgerhq/device-transport-kit-web-hid": "^1.2.3",
+    "@ledgerhq/hw-app-eth": "^7.6.2",
+    "@ledgerhq/hw-transport-node-speculos-http": "^6.35.1",
     "@scure/bip39": "^2.0.1",
     "@unlink-xyz/sdk": "0.0.2-canary.0",
     "@x402/core": "^2.9.0",

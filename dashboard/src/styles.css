@@ -1794,3 +1794,311 @@ thead th {
   text-align: left;
 }
 .al-view-dashboard:hover { background: #333; }
+
+/* ═══════��════════════════════════���══════════════════════════
+   LEDGER MODAL  —  Speculos approval overlay
+   ══════════════════════════════════════════════════════════ */
+
+.ledger-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ledgerFadeIn 0.2s ease;
+}
+
+@keyframes ledgerFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ledger-device {
+  width: 380px;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+.ledger-notch {
+  padding: 8px 0;
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  color: #333;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.ledger-screen {
+  padding: 28px 28px 24px;
+}
+
+/* Header */
+.ledger-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f97316;
+  margin-bottom: 24px;
+}
+
+.ledger-header-dot {
+  width: 6px;
+  height: 6px;
+  background: #f97316;
+  flex-shrink: 0;
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+/* Fields */
+.ledger-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.ledger-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ledger-label {
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #555;
+}
+
+.ledger-value {
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+
+.ledger-value.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  color: #ccc;
+  word-break: break-all;
+}
+
+/* Timer */
+.ledger-timer {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #444;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Buttons */
+.ledger-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ledger-btn {
+  padding: 12px 16px;
+  border: none;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.ledger-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ledger-btn-reject {
+  background: #1a1a1a;
+  color: #f87171;
+  border: 1px solid #2a2a2a;
+}
+.ledger-btn-reject:hover:not(:disabled) { background: #221111; }
+
+.ledger-btn-approve {
+  background: #0a2a0a;
+  color: #4ade80;
+  border: 1px solid #1a3a1a;
+}
+.ledger-btn-approve:hover:not(:disabled) { background: #0d3d0d; }
+
+/* Result */
+.ledger-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+}
+
+.ledger-result-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.ledger-result-text {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.ledger-result.approved .ledger-result-icon,
+.ledger-result.approved .ledger-result-text { color: #4ade80; }
+
+.ledger-result.rejected .ledger-result-icon,
+.ledger-result.rejected .ledger-result-text { color: #f87171; }
+
+/* Proof section */
+.ledger-proof {
+  width: 100%;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #222;
+}
+
+.ledger-proof-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #4ade80;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.ledger-proof-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 3px 0;
+}
+
+.ledger-proof-key {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ledger-proof-val {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #ccc;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TX PROOF ROW  —  expandable Ledger signature proof
+   ══════════════════════════════════════════════════════════ */
+
+.tx-has-proof { cursor: pointer; }
+.tx-has-proof:hover { background: var(--bg3) !important; }
+
+.tx-proof-row td {
+  padding: 0 !important;
+  border-top: none !important;
+}
+
+.tx-proof {
+  background: #0d0d0d;
+  border: 1px solid #1a1a1a;
+  padding: 16px 20px;
+  margin: 0 8px 8px;
+}
+
+.tx-proof-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #4ade80;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.tx-proof-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tx-proof-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tx-proof-key {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.tx-proof-val {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #ccc;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.tx-proof-addr {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.tx-proof-msg {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: #888;
+  background: #111;
+  padding: 8px 10px;
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  border: 1px solid #1a1a1a;
+}
+
+.tx-proof-verify {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #1a1a1a;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #4ade80;
+  letter-spacing: 0.02em;
+}

@@ -9,6 +9,7 @@ import { logger } from "./utils/logger.js";
 import { gateway } from "./core/gateway.js";
 import { privacyRouter } from "./core/privacy.js";
 import { createPaymentFetch } from "./core/payment.js";
+import { ledgerEmulator } from "./core/ledger-emulator.js";
 
 const app = express();
 
@@ -19,6 +20,9 @@ app.use(healthRouter);
 app.use(agentRouter);
 app.use(agentsRouter);
 app.use(onboardRouter);
+
+// Ledger emulator routes (GET /ledger/pending, POST /ledger/approve, etc.)
+ledgerEmulator.mountRoutes(app);
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
@@ -34,6 +38,16 @@ async function start() {
   // Payment module has no async init — wire it unconditionally
   gateway.setPayment({ createPaymentFetch });
   logger.info("Payment module wired ✓");
+
+  // Ledger emulator
+  try {
+    await ledgerEmulator.init();
+    gateway.setLedger(ledgerEmulator);
+    logger.info("Ledger emulator initialized");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`Ledger init failed: ${msg} — running with stub ledger`);
+  }
 
   try {
     await privacyRouter.init({
