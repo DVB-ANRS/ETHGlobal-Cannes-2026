@@ -187,7 +187,10 @@ export class AgentRunner extends EventEmitter {
 
     const res = await fetch(`${this.config.gatewayUrl}/agent/request`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Agent-Id": this.config.id,
+      },
       body: JSON.stringify({ url }),
     });
 
