@@ -37,7 +37,21 @@ export interface PaymentRecord {
 
 export interface PolicyConfig {
   maxPerTransaction: number;
-  maxPerDay: number;
   allowedRecipients: string[];
   blockedRecipients: string[];
+}
+
+// ─── Onboarding types ────────────────────────────────────────────────
+
+export interface AgentPolicy {
+  agentAddress: string;
+  label?: string;
+  maxPerTx: number;
+}
+
+export interface UserVault {
+  walletAddress: string;
+  derivedMnemonic: string;
+  vaultReady: boolean;
+  agents: Map<string, AgentPolicy>; // agentAddress → policy
 }
