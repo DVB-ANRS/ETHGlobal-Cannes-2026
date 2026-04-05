@@ -33,6 +33,7 @@ export interface PaymentRecord {
   policy: PolicyDecision;
   status: 'pending' | 'approved' | 'rejected' | 'denied';
   txHash?: string;
+  agentId?: string;
 }
 
 export interface PolicyConfig {
