@@ -75,7 +75,7 @@ function separator(title: string) {
 
 async function main() {
   logger.payment("=".repeat(60));
-  logger.payment("  SecretPay Demo — 5 Use Cases");
+  logger.payment("  SecretPay Demo — 4 Use Cases");
   logger.payment("=".repeat(60));
 
   // Verify gateway is up
@@ -89,43 +89,22 @@ async function main() {
     process.exit(1);
   }
 
-  // ── UC1: Auto-approve ($0.01 < $5 threshold) ──
-  separator("UC1: Auto-approve — $0.01 request");
-  await sendRequest(`${MOCK_BASE}/data`, "Auto-approve $0.01");
+  // ── UC1: Auto-approve ($0.10 < $1 ledger threshold) ──
+  separator("UC1: Auto-approve — $0.10 request");
+  await sendRequest(`${MOCK_BASE}/data`, "Auto-approve $0.10");
 
-  // ── UC2: Ledger approve ($10 > $5 threshold) ──
-  separator("UC2: Ledger approve — $10 request");
+  // ── UC2: Ledger approve ($1.50 >= $1 ledger threshold, <= $2 cap) ──
+  separator("UC2: Ledger approve — $1.50 request");
   logger.payment(">>> Press APPROVE on Ledger device <<<");
-  await sendRequest(`${MOCK_BASE}/bulk-data`, "Ledger approve $10");
+  await sendRequest(`${MOCK_BASE}/bulk-data`, "Ledger approve $1.50");
 
-  // ── UC3: Ledger reject ($10 > $5 threshold) ──
-  separator("UC3: Ledger reject — $10 request");
+  // ── UC3: Ledger reject ($1.50 >= $1 ledger threshold) ──
+  separator("UC3: Ledger reject — $1.50 request");
   logger.payment(">>> Press REJECT on Ledger device <<<");
-  await sendRequest(`${MOCK_BASE}/bulk-data`, "Ledger reject $10");
+  await sendRequest(`${MOCK_BASE}/bulk-data`, "Ledger reject $1.50");
 
-  // ── UC4: Budget exhaustion ──
-  separator("UC4: Budget exhaustion — 50× $0.01 requests");
-  logger.payment(
-    "Sending 50 requests to hit daily budget ($50 maxPerDay)..."
-  );
-  for (let i = 1; i <= 50; i++) {
-    const result = await sendRequest(
-      `${MOCK_BASE}/data`,
-      `Budget test ${i}/50`
-    );
-    // Stop early if policy escalates to ledger
-    if (result.payment?.policy === "ledger-approved" || result.reason === "ledger") {
-      logger.payment(`Budget limit hit at request ${i} — policy escalated to ledger`);
-      break;
-    }
-    if (result.error) {
-      logger.payment(`Request ${i} failed — stopping budget test`);
-      break;
-    }
-  }
-
-  // ── UC5: Blacklist ──
-  separator("UC5: Blacklist — denied recipient");
+  // ── UC4: Blacklist ──
+  separator("UC4: Blacklist — denied recipient");
   logger.payment("NOTE: Requires a blacklisted recipient in policy.json (Dev 4)");
   await sendRequest(`${MOCK_BASE}/data`, "Blacklist test");
 
