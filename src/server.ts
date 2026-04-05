@@ -9,7 +9,7 @@ import { logger } from "./utils/logger.js";
 import { gateway } from "./core/gateway.js";
 import { privacyRouter } from "./core/privacy.js";
 import { createPaymentFetch } from "./core/payment.js";
-import { ledgerEmulator } from "./core/ledger-emulator.js";
+import { ledgerEmulator } from "./core/ledger.js";
 
 const app = express();
 
