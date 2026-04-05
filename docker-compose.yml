@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - GATEWAY_PORT=3000
+      - MOCK_SERVER_PORT=4021
+      - LEDGER_MODE=speculos
+      - SPECULOS_HOST=http://speculos
+      - SPECULOS_API_PORT=5001
+    env_file:
+      - .env
+    depends_on:
+      - speculos
+
+  speculos:
+    image: ghcr.io/ledgerhq/speculos
+    ports:
+      - "5001:5001"
+      - "40000:40000"
+    volumes:
+      - ./speculos-apps:/speculos/apps
+    command: >
+      --model nanosp
+      --display headless
+      --apdu-port 40000
+      --api-port 5001
+      --seed "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+      apps/ethereum-nanosp.elf

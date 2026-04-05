@@ -1,0 +1,11 @@
+{
+  "buildCommand": "pnpm install && pnpm build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/agent/:path*", "destination": "https://VOTRE-BACKEND.up.railway.app/agent/:path*" },
+    { "source": "/agents/:path*", "destination": "https://VOTRE-BACKEND.up.railway.app/agents/:path*" },
+    { "source": "/onboard/:path*", "destination": "https://VOTRE-BACKEND.up.railway.app/onboard/:path*" },
+    { "source": "/ledger/:path*", "destination": "https://VOTRE-BACKEND.up.railway.app/ledger/:path*" },
+    { "source": "/health/:path*", "destination": "https://VOTRE-BACKEND.up.railway.app/health/:path*" }
+  ]
+}
