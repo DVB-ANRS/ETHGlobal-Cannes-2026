@@ -186,7 +186,7 @@ export default function Landing({ onLaunch }: Props) {
           </p>
           <div className="l-hero-actions">
             <button className="l-cta" onClick={onLaunch}>Launch Dashboard</button>
-            <a className="l-cta-ghost" href="https://github.com" target="_blank" rel="noopener noreferrer">
+            <a className="l-cta-ghost" href="https://github.com/DVB-ANRS/ETHGlobal-Cannes-2026" target="_blank" rel="noopener noreferrer">
               View on GitHub ↗
             </a>
           </div>
