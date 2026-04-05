@@ -9,9 +9,9 @@ import { logger } from "./utils/logger.js";
 import { gateway } from "./core/gateway.js";
 import { privacyRouter } from "./core/privacy.js";
 import { createPaymentFetch } from "./core/payment.js";
-import { ledgerEmulator } from "./core/ledger.js";
 
 const app = express();
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 app.use(cors());
 app.use(express.json());
@@ -21,9 +21,6 @@ app.use(agentRouter);
 app.use(agentsRouter);
 app.use(onboardRouter);
 
-// Ledger emulator routes (GET /ledger/pending, POST /ledger/approve, etc.)
-ledgerEmulator.mountRoutes(app);
-
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
 });
@@ -32,8 +29,6 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   logger.error(err.message);
   res.status(500).json({ error: "Internal server error" });
 });
-
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 function validateEnv() {
   const required = ["UNLINK_API_KEY", "AGENT_MNEMONIC", "EVM_PRIVATE_KEY"];
@@ -51,12 +46,14 @@ async function start() {
   gateway.setPayment({ createPaymentFetch });
   logger.info("Payment module wired ✓");
 
-  // Ledger emulator — disabled in production (Speculos requires Docker)
+  // Ledger emulator — dynamic import only in dev (packages not ESM-compatible in prod)
   if (!IS_PRODUCTION) {
     try {
+      const { ledgerEmulator } = await import("./core/ledger.js");
+      ledgerEmulator.mountRoutes(app);
       await ledgerEmulator.init();
       gateway.setLedger(ledgerEmulator);
-      logger.info("Ledger emulator initialized");
+      logger.info("Ledger emulator initialized ✓");
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error(`Ledger init failed: ${msg} — running with stub ledger`);
