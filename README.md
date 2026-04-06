@@ -2,7 +2,6 @@
 
 Privacy-first payment middleware for AI agents. Built at [ETHGlobal Cannes 2026](https://ethglobal.com/events/cannes2026) by **DeVinci Blockchain** (Paris, Blockchain) - four hackers, 36 hours, [Sofiane Ben Taleb](https://github.com/gamween), [Ramzy Chibani](https://github.com/DZ-Ramzy), [Armand Séchon](https://github.com/STOOOKEEE), [Noé Wales](https://github.com/CHAAIISE).
 
-
 ---
 
 ## The Problem
@@ -169,8 +168,12 @@ src/
     payment.ts           # x402 fetch wrapper (burner signs)
     policy.ts            # Policy engine: auto / ledger / denied
     ledger.ts            # Speculos emulator: approve/reject + signing
+    agent-runner.ts      # LLM agent orchestration (Groq)
+    vault-manager.ts     # Multi-agent vault management
   routes/
     agent.ts             # /agent/* endpoints
+    agents.ts            # Multi-agent support
+    onboard.ts           # Agent onboarding / vault setup
     health.ts            # /health
   mock/
     x402-server.ts       # Simulated paid API (:4021)
