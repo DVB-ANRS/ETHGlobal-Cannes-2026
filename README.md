@@ -1,10 +1,7 @@
 # SecretPay
 
-> Privacy-first payment middleware for AI agents. Built at [ETHGlobal Cannes 2026](https://ethglobal.com/events/cannes2026).
+Privacy-first payment middleware for AI agents. Built at [ETHGlobal Cannes 2026](https://ethglobal.com/events/cannes2026) by **DeVinci Blockchain** (Paris, Blockchain) - four hackers, 36 hours, [Sofiane Ben Taleb](https://github.com/gamween), [Ramzy Chibani](https://github.com/DZ-Ramzy), [Armand Séchon](https://github.com/STOOOKEEE), [Noé Wales](https://github.com/CHAAIISE).
 
-[![Demo](https://img.shields.io/badge/Demo-YouTube-red)](https://youtu.be/OhiKjd5AnFk)
-[![Live](https://img.shields.io/badge/Live-secretpay.vercel.app-blue)](https://secretpay.vercel.app)
-[![Built at](https://img.shields.io/badge/Built%20at-ETHGlobal%20Cannes%202026-blueviolet)](https://ethglobal.com/events/cannes2026)
 
 ---
 
@@ -18,9 +15,11 @@ Every time an AI agent pays for an API call, the transaction is permanently visi
 
 No two payments are ever linkable on-chain. The agent operates autonomously for small amounts, but cannot escalate spending without physical confirmation on a Ledger device.
 
-## Demo
+## Links
 
-[![Watch the demo](https://img.youtube.com/vi/OhiKjd5AnFk/maxresdefault.jpg)](https://youtu.be/OhiKjd5AnFk)
+- **GitHub Repository**: https://github.com/DVB-ANRS/SecretPay
+- **App**: https://secretpay.vercel.app
+- **Youtube Presentation**: https://youtu.be/OhiKjd5AnFk
 
 ## How It Works
 
@@ -222,17 +221,6 @@ SecretPay uses Ledger as the **trust layer between AI autonomy and human control
 **@ledgerhq/hw-transport-node-speculos-http:** Drop-in replacement for USB transport. Switching between Speculos and a real device requires changing one import. The transport occasionally hangs on long messages - a configurable timeout would help.
 
 **@ledgerhq/hw-app-eth:** `signPersonalMessage()` works as expected. The v/r/s signature format integrates directly with viem for address recovery. Would be valuable to have built-in EIP-712 support for structured data signing, especially for payment proofs.
-
-## Team
-
-Built by **DeVinci Blockchain** (Paris) - four students, 36 hours.
-
-| Name | GitHub |
-|------|--------|
-| Sofiane Ben Taleb | [@gamween](https://github.com/gamween) |
-| Armand Séchon | [@STOOOKEEE](https://github.com/STOOOKEEE) |
-| Noé Wales | [@CHAAIISE](https://github.com/CHAAIISE) |
-| Ramzy Chibani | [@DZ-Ramzy](https://github.com/DZ-Ramzy) |
 
 ## License
 
