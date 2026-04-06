@@ -1,282 +1,173 @@
 # SecretPay — CLAUDE.md
 
-## Contexte
+## Context
 
-**ETHGlobal Cannes 2026 | Team DVB | 4-5 avril 2026**
-Hackathon 36h. ~15h restantes. Deadline soumission : 5 avril 2026.
-**Objectif** : gagner les 3 tracks sponsors = $15,000 max.
+**ETHGlobal Cannes 2026 | Team DeVinci Blockchain | April 4-5, 2026**
+Hackathon project — completed and submitted.
+Targeting 3 sponsor tracks: AI Agents x Ledger ($6k), Best Private Application ($3k), Best Agentic Economy with Nanopayments ($6k).
 
-SecretPay est un **middleware backend Node.js/TypeScript** qui s'intercale entre un AI agent et des APIs payantes (protocole x402). Il rend les paiements **privés** (via Unlink privacy pool + burner wallets) et **contrôlés** (approbation Ledger hardware sur gros montants).
-
----
-
-## Stack technique
-
-- **Runtime** : Node.js + TypeScript (`tsx` pour le dev)
-- **Serveur** : Express (port 3000)
-- **Blockchain** : viem — Base Sepolia uniquement (chain ID 84532)
-- **Privacy** : `@unlink-xyz/sdk` — pool ZK, burner wallets jetables
-- **Paiements** : `@x402/fetch` + `@x402/evm` + `@x402/core` + `@x402/server`
-- **Ledger Emulator** : Speculos (Docker) + `@ledgerhq/hw-transport-node-speculos-http` + `@ledgerhq/hw-app-eth` — émulateur officiel Ledger, approve/reject via le dashboard React
-- **Package manager** : pnpm
+SecretPay is a **backend middleware (Node.js/TypeScript)** between an AI agent and paid APIs (x402 protocol). It makes payments **private** (Unlink ZK privacy pool + disposable burner wallets) and **controlled** (Ledger hardware approval on high-value amounts).
 
 ---
 
-## Adresses blockchain (Base Sepolia)
+## Tech Stack
 
-| Ressource | Adresse / URL |
-|-----------|---------------|
-| Pool Unlink | `0x647f9b99af97e4b79DD9Dd6de3b583236352f482` |
-| USDC Base Sepolia | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+- **Runtime**: Node.js + TypeScript (`tsx` for dev)
+- **Server**: Express 5 (port 3000)
+- **Blockchain**: viem — Base Sepolia only (chain ID 84532)
+- **Privacy**: `@unlink-xyz/sdk` — ZK pool, disposable burner wallets
+- **Payments**: `@x402/fetch` + `@x402/evm` + `@x402/core` + `@x402/express`
+- **Ledger Emulator**: Speculos (Docker) + `@ledgerhq/hw-transport-node-speculos-http` + `@ledgerhq/hw-app-eth`
+- **Dashboard**: React 18 + Vite + Privy auth + Three.js + Motion
+- **LLM Agent**: Groq SDK (llama-3.3-70b)
+- **Package manager**: pnpm
+
+---
+
+## On-chain Addresses (Base Sepolia)
+
+| Resource | Address |
+|----------|---------|
+| Unlink Pool | `0x647f9b99af97e4b79DD9Dd6de3b583236352f482` |
+| USDC | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
 | RPC | `https://sepolia.base.org` |
 | Explorer | `https://sepolia.basescan.org` |
 
 ---
 
-## Variables d'environnement (`.env`)
+## Environment Variables
 
-```env
-UNLINK_API_KEY=          # https://hackaton-apikey.vercel.app/
-AGENT_MNEMONIC=          # BIP-39 mnemonic du wallet agent
-BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-MOCK_SERVER_PORT=4021
-MOCK_RECEIVER_ADDRESS=   # Adresse receiver du mock server
-MOCK_RECEIVER_PRIVATE_KEY=
-GATEWAY_PORT=3000
-DEFAULT_MAX_PER_TX=2
-BACKUP_BURNER_PRIVATE_KEY=  # Optionnel — wallet de backup qui fund les burners en parallèle du pool Unlink
-LEDGER_MODE=speculos      # speculos | terminal (default: speculos)
-SPECULOS_HOST=http://127.0.0.1          # Speculos base URL
-SPECULOS_API_PORT=5001                  # Speculos HTTP API port
-```
+Two env files:
+- `.env` — core backend config (from `.env.example`)
+- `.env.local` — local overrides, secrets, Groq key (from `.env.local.example`)
+
+Required vars: `UNLINK_API_KEY`, `AGENT_MNEMONIC`, `EVM_PRIVATE_KEY`, `MOCK_RECEIVER_ADDRESS`, `MOCK_RECEIVER_PRIVATE_KEY`
+
+Optional: `BACKUP_BURNER_PRIVATE_KEY` (parallel burner funding), `GROQ_API_KEY` (LLM agent)
 
 ---
 
-## Structure des fichiers
+## File Structure
 
 ```
 src/
-├── server.ts                  # Express app (port 3000)
+├── server.ts                  # Express app entry point
 ├── routes/
-│   ├── agent.ts               # POST /agent/request, GET /agent/balance, GET /agent/history
+│   ├── agent.ts               # POST /agent/request, GET /agent/balance, GET /agent/history, GET /agent/logs
+│   ├── agents.ts              # Multi-agent support
+│   ├── onboard.ts             # Agent onboarding / vault setup
 │   └── health.ts              # GET /health
 ├── core/
-│   ├── gateway.ts             # Chef d'orchestre du flow de paiement
-│   ├── policy.ts              # Policy Engine : auto / ledger / denied
-│   ├── privacy.ts             # Unlink SDK : deposit, withdraw vers burner
-│   ├── payment.ts             # x402 client : createX402Fetch(burnerKey)
-│   └── ledger.ts              # Speculos emulator : requestApproval via dashboard + real signing
+│   ├── gateway.ts             # Payment orchestration (10-step flow)
+│   ├── policy.ts              # Policy engine: auto / ledger / denied
+│   ├── privacy.ts             # Unlink SDK: deposit, ZK withdraw to burner
+│   ├── payment.ts             # x402 client: createPaymentFetch(burnerKey)
+│   ├── ledger.ts              # Speculos emulator: approve/reject + signPersonalMessage
+│   ├── vault-manager.ts       # Multi-agent vault management
+│   └── agent-runner.ts        # LLM agent orchestration (Groq)
 ├── utils/
-│   ├── burner.ts              # generateBurner() + fundBurnerFromBackup() (viem ERC-20 transfer)
-│   ├── config.ts              # Chargement .env + validation
-│   └── logger.ts              # Logs colorés pour la demo
+│   ├── burner.ts              # generateBurner() + fundBurnerFromBackup()
+│   ├── config.ts              # Env loading + validation
+│   └── logger.ts              # Colored logs for demo
 ├── types/
 │   └── index.ts               # AgentRequest, AgentResponse, PaymentRecord, PolicyDecision
 ├── config/
-│   └── policy.json            # maxPerTransaction:2, floor:0.1, blacklist:[]
+│   └── policy.json            # maxPerTransaction, thresholds, blacklist
 ├── mock/
-│   └── x402-server.ts         # API payante simulée (port 4021)
+│   └── x402-server.ts         # Simulated paid API (port 4021)
 └── demo/
-    └── agent-sim.ts           # Script qui enchaîne les 5 use cases
+    ├── agent-sim.ts           # Automated 4 use-case demo
+    └── agent-llm.ts           # LLM-powered agent demo
+
+dashboard/                     # React + Vite frontend (deployed on Vercel)
+├── src/
+│   ├── App.tsx                # Privy auth, view routing
+│   ├── main.tsx               # React entry
+│   └── components/
+│       ├── Header.tsx         # Navigation
+│       ├── Landing.tsx        # Welcome / pitch screen
+│       ├── LedgerModal.tsx    # Hardware approval UI (polls /ledger/pending)
+│       ├── AgentForm.tsx      # Agent config form
+│       ├── AgentLive.tsx      # Live simulator
+│       ├── TxFeed.tsx         # Payment history
+│       ├── Stats.tsx          # Balance & metrics
+│       ├── DecryptedText.tsx  # Encrypted data display
+│       └── SidePanel.tsx      # Settings panel
 ```
 
 ---
 
-## Ownership des modules (règle : ne pas toucher au code des autres)
-
-| Dev | Alias | Fichiers owned |
-|-----|-------|----------------|
-| Dev 1 | `@backend` | `server.ts`, `routes/`, `core/gateway.ts`, `types/`, `utils/config.ts`, `utils/logger.ts` |
-| Dev 2 | `@privacy` | `core/privacy.ts`, `utils/burner.ts` |
-| Dev 3 | `@payment` | `core/payment.ts`, `mock/x402-server.ts`, `demo/agent-sim.ts` |
-| Dev 4 | `@trust` | `core/policy.ts`, `core/ledger.ts`, `config/policy.json`, dashboard LedgerModal |
-
-**Si tu dois modifier le fichier d'un autre → prévenir d'abord sur Slack/Discord. Merge sur `main` uniquement quand le module tourne en isolation.**
-
----
-
-## Flow de paiement (gateway.ts)
+## Payment Flow (gateway.ts)
 
 ```
-1. Proxy HTTP vers l'URL cible
-2. Si 200 → retourner directement
-3. Si 402 → extraire prix + destinataire
-4. policy.evaluate(prix, destinataire) → auto | ledger | denied
-5. Si denied → retourner 403
-6. Si ledger → ledgerEmulator.requestApproval() → notifie le dashboard, attend approve/reject du user dans le navigateur
-7. privacy.withdrawToBurner(montant) → funding parallèle (voir ci-dessous)
-8. payment.createX402Fetch(burnerPrivateKey) → fetch wrapper
-9. Retenter la requête → l'API sert les données
-10. Stocker PaymentRecord + retourner à l'agent
+1. Proxy HTTP request to target URL
+2. If 200 → return directly
+3. If 402 → extract price + recipient from headers
+4. policy.evaluate(price, recipient) → auto | ledger | denied
+5. If denied → return 403
+6. If ledger → push to pending, dashboard polls, operator approve/reject (120s timeout)
+7. privacy.withdrawToBurner(amount) → parallel funding (Unlink ZK + backup ERC-20)
+8. payment.createPaymentFetch(burnerPrivateKey) → x402-enabled fetch
+9. Retry request with payment → API returns data
+10. Store PaymentRecord + return to agent
 ```
 
 ---
 
 ## Parallel Burner Funding (privacy.ts + burner.ts)
 
-Le burner wallet est **toujours frais et jetable** — c'est lui qui signe le paiement x402, jamais le backup wallet.
-
-Le problème : le withdraw Unlink (pool ZK → burner) peut être lent sur Base Sepolia. Pour garantir que le burner a des fonds, on lance **deux transferts en parallèle** vers le même burner :
-
 ```
 withdrawToBurner(amount)
-  1. generateBurner() → fresh burner { address, privateKey }
+  1. generateBurner() → fresh { address, privateKey }
   2. Promise.allSettled([
-       Path A: Unlink pool → burner   (withdraw ZK, peut prendre >30s)
-       Path B: Backup wallet → burner  (ERC-20 transfer direct, ~3s)
+       Path A: Unlink pool → burner   (ZK withdraw, ~30s)
+       Path B: Backup wallet → burner  (ERC-20 transfer, ~3s)
      ])
-  3. Au moins un doit réussir, sinon erreur
-  4. Return { address, privateKey } du fresh burner
+  3. At least one must succeed
+  4. Return fresh burner credentials
 ```
 
-- **Path A** (Unlink) : `client.withdraw()` + `pollTransactionStatus()` — important pour la privacy proof (track sponsor)
-- **Path B** (Backup) : `fundBurnerFromBackup()` dans `burner.ts` — simple `walletClient.writeContract()` ERC-20 `transfer(burnerAddress, amount)` depuis `BACKUP_BURNER_PRIVATE_KEY`
-- Si `BACKUP_BURNER_PRIVATE_KEY` n'est pas configuré, seul le path Unlink tourne (comportement original)
-- Si les deux réussissent, le burner a 2× le montant — acceptable pour un hackathon
-- Le backup wallet **n'est jamais passé à `createPaymentFetch()`** — seule la clé du fresh burner est utilisée pour signer
+- Path B only runs if `BACKUP_BURNER_PRIVATE_KEY` is set
+- Backup wallet never signs x402 payments — only the fresh burner does
 
 ---
 
 ## Policy Engine (policy.json)
 
-```json
-{
-  "maxPerTransaction": 2,
-  "allowedRecipients": [],
-  "blockedRecipients": []
-}
-```
-
-### Seuils de transaction (en USDC)
-
-| Paramètre | Valeur | Effet |
-|-----------|--------|-------|
-| Floor (minimum) | $0.10 | En dessous → `"denied"` |
-| Cap / hard cap | $2.00 | Au dessus → `"denied"` |
-| Seuil Ledger | $1.00 | `>= $1` → `"ledger"` (approbation hardware) |
-
-Pas de limite quotidienne — toutes les transactions passent tant qu'elles respectent le floor/cap.
-
-### Logique d'évaluation (ordre de priorité)
-
-```
-if amount < 0.10          → "denied" (en dessous du minimum)
-if amount > 2.00          → "denied" (au dessus du cap)
-if recipient blacklisté   → "denied"
-if amount >= 1.00         → "ledger"
-else                       → "auto"
-```
+| Amount | Decision |
+|--------|----------|
+| < $0.10 | `denied` (below minimum) |
+| $0.10 - $0.99 | `auto` |
+| $1.00 - $2.00 | `ledger` (hardware approval) |
+| > $2.00 | `denied` (above cap) |
+| Blacklisted recipient | `denied` |
 
 ---
 
-## 5 Use Cases à démontrer
-
-| # | Scénario | Endpoint mock | Prix | Résultat attendu |
-|---|----------|--------------|------|-----------------|
-| 1 | Auto-approve | `GET /data` | $0.10 | 200 + log AUTO-APPROVE |
-| 2 | Ledger approve | `GET /bulk-data` | $1.50 | Ledger prompt → approve → 200 |
-| 3 | Ledger reject | `GET /bulk-data` | $1.50 | Ledger prompt → reject → 403 |
-| 4 | Blacklist | URL blacklistée | - | 403 "denied" immédiat |
-
----
-
-## Tracks sponsors (critères de submission)
-
-### Track Unlink — $3,000
-- `@unlink-xyz/sdk` utilisé (deposit, withdraw, getBalance)
-- ≥1 tx privée réussie sur Base Sepolia
-- Liens Basescan montrant les burners non-liés
-- Vidéo ≤ 3 min + repo GitHub
-
-### Track Arc/Circle (x402) — $6,000
-- `@x402/fetch` + `@x402/evm` fonctionnels
-- Diagramme d'architecture dans le README
-- Tag soumission : "Agentic Economy with Nanopayments"
-
-### Track Ledger — $6,000
-- Speculos emulator (officiel Ledger) via Docker avec `@ledgerhq/hw-transport-node-speculos-http` + `@ledgerhq/hw-app-eth`
-- Human-in-the-loop : approve/reject dans le dashboard React, signature réelle via Speculos (`signPersonalMessage`)
-- Clear Signing JSON (ERC-7730) créé pour type `AgentPayment`
-- Section "DX Feedback" dans le README (obligatoire)
-
----
-
-## Comment lancer
+## NPM Scripts
 
 ```bash
-# Terminal 1 — Mock x402 server
-pnpm tsx src/mock/x402-server.ts
-
-# Terminal 2 — SecretPay gateway
-pnpm dev
-
-# Terminal 3 — Demo agent
-pnpm tsx src/demo/agent-sim.ts
+pnpm dev          # Start SecretPay gateway
+pnpm mock         # Start mock x402 API server
+pnpm demo         # Run 4-scenario automated demo
+pnpm agent        # Start LLM-powered agent (needs GROQ_API_KEY)
+pnpm build        # TypeScript compile
 ```
 
 ---
 
-## API Gateway
+## Deployments
 
-```
-POST /agent/request   { url, method?, headers?, body? }
-GET  /agent/balance   → balance dans le pool Unlink
-GET  /agent/history   → liste des PaymentRecord en mémoire
-GET  /health          → { status: "ok" }
-```
+- **Dashboard**: Vercel — https://secretpay.vercel.app
+- **Backend**: Docker (Dockerfile + docker-compose.yml with Speculos)
+- **Demo video**: https://youtu.be/OhiKjd5AnFk
 
 ---
 
-## Règles de code
+## Code Rules
 
-- TypeScript strict (`strict: true`)
-- Pas de tests unitaires — pas le temps. Focus sur le E2E.
-- Logs structurés dans chaque étape du gateway (pour la demo)
-- Aucun secret dans le repo (`.env` dans `.gitignore`)
-- Pas de dashboard tant que le E2E n'est pas solide
-
----
-
-## Fallbacks si ça plante
-
-| Problème | Solution |
-|----------|----------|
-| Unlink SDK bloqué | Simuler le pool : transfers directs viem + documenter le workaround |
-| x402 facilitator down | Self-host depuis le repo coinbase/x402 |
-| Speculos Docker down | Fallback : LEDGER_MODE=terminal (readline) — approve/reject sans signature |
-| Withdraw trop lent | Parallel funding : backup wallet envoie USDC au burner en même temps que le pool Unlink |
-| Réseau saturé | Même mécanisme — le transfert direct backup→burner passe même si le pool est lent |
-| Flow E2E cassé à H14 | Scope réduit : juste auto-approve. Ledger = demo séparée |
-
----
-
-## Planning 15h restantes (à partir de maintenant)
-
-| Heure | Priorité |
-|-------|----------|
-| H0→H2 | Setup repo, install packages, server.ts minimal qui démarre |
-| H2→H6 | 4 modules en isolation : gateway stub, privacy.ts, payment.ts, policy.ts |
-| H6→H10 | Intégration gateway — flow auto-approve E2E fonctionnel |
-| H10→H13 | Ledger intégré, 5 use cases passent |
-| H13→H14 | Privacy proof sur Basescan, dry-run x3 |
-| H14→H15 | Vidéo (3 min), README, submission |
-
----
-
-## Script vidéo (3 min)
-
-| Temps | Contenu |
-|-------|---------|
-| 0:00-0:25 | Problème : Basescan montre tout (wallet public) |
-| 0:25-0:50 | Solution : schéma archi SecretPay |
-| 0:50-1:20 | Demo auto-approve $0.10 — logs en direct |
-| 1:20-2:00 | Demo Ledger $1.50 — device à la caméra, approve physique |
-| 2:00-2:15 | Demo blacklist — refus instantané |
-| 2:15-2:45 | Preuve onchain : Basescan, burners différents, non-reliables |
-| 2:45-3:00 | Closing pitch |
-
----
-
-## Pitch 30 secondes
-
-> "Chaque fois qu'un AI agent paie pour un service, le monde entier voit combien, à qui, et à quelle fréquence. C'est comme publier votre relevé bancaire sur Twitter. SecretPay résout ça : les agents paient en USDC via le protocole x402, les transactions passent par un privacy pool Unlink via des burner wallets jetables, et les dépenses critiques sont approuvées physiquement sur un Ledger. Privacy pour les agents, contrôle pour les humains."
+- TypeScript strict mode
+- No unit tests — E2E focus only
+- Structured logs at each gateway step (for demo visibility)
+- No secrets in repo (`.env` and `.env.local` are gitignored)
+- All user-facing text in English
