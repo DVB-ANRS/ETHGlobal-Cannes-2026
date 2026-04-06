@@ -1,6 +1,7 @@
 node_modules
 dist
 .env
+.env.local
 .DS_Store
+CLAUDE.md
 # speculos-apps/ — committed for Railway deployment
-*.env.local
