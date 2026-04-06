@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { PaymentRecord } from '../types'
+import { shortAddr } from '../utils'
 
 interface Props {
   history: PaymentRecord[]
@@ -19,11 +20,6 @@ function fmtAmount(raw: string) {
   const n = parseFloat(raw)
   if (isNaN(n)) return raw
   return '$' + n.toFixed(n < 0.01 ? 6 : 2)
-}
-
-function shortAddr(addr: string) {
-  if (!addr || addr.length < 12) return addr ?? '—'
-  return addr.slice(0, 8) + '…' + addr.slice(-6)
 }
 
 function endpoint(url: string) {

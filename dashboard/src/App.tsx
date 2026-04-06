@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { usePrivy } from '@privy-io/react-auth'
 import type { PaymentRecord, PolicyConfig } from './types'
+import { resolveWalletAddress } from './utils'
 import Header from './components/Header'
 import Stats from './components/Stats'
 import TxFeed from './components/TxFeed'
@@ -20,16 +21,6 @@ const DEFAULT_POLICY: PolicyConfig = {
 }
 
 type View = 'landing' | 'live' | 'dashboard'
-
-function resolveWalletAddress(user: { linkedAccounts?: Array<{ type?: string; address?: string }> }): string | null {
-  const linked = user.linkedAccounts ?? []
-
-  // Privy account payloads can differ by provider/type, so we accept any linked account carrying an address.
-  const walletLike = linked.find(a => a.type === 'wallet' && typeof a.address === 'string' && a.address.length > 0)
-    ?? linked.find(a => typeof a.address === 'string' && a.address.length > 0)
-
-  return walletLike?.address ?? null
-}
 
 export default function App() {
   const { login, authenticated, user }  = usePrivy()

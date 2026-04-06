@@ -1,19 +1,9 @@
 import { usePrivy } from '@privy-io/react-auth'
+import { shortAddr, resolveWalletAddress } from '../utils'
 
 interface Props {
   balance: string | null
   onBack: () => void
-}
-
-function shortAddr(addr: string) {
-  return addr.slice(0, 6) + '…' + addr.slice(-4)
-}
-
-function resolveWalletAddress(user: { linkedAccounts?: Array<{ type?: string; address?: string }> }): string | null {
-  const linked = user.linkedAccounts ?? []
-  const w = linked.find(a => a.type === 'wallet' && typeof a.address === 'string' && a.address.length > 0)
-    ?? linked.find(a => typeof a.address === 'string' && a.address.length > 0)
-  return w?.address ?? null
 }
 
 export default function Header({ balance, onBack }: Props) {

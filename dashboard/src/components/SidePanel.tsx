@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { PolicyConfig } from '../types'
+import { shortAddr } from '../utils'
 
 interface Props {
   policy: PolicyConfig
@@ -10,12 +11,6 @@ interface Props {
 }
 
 const LEDGER = 1.00
-
-
-function shortAddr(addr: string) {
-  if (!addr || addr.length < 12) return addr
-  return addr.slice(0, 8) + '…' + addr.slice(-6)
-}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)

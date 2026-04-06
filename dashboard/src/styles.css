@@ -38,8 +38,6 @@
 
 html, body, #root { height: 100%; }
 
-.app { overflow: hidden; }
-
 body {
   background: var(--bg);
   color: var(--text);
@@ -54,6 +52,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
 /* ── Content ─────────────────────────────────────────────── */
@@ -578,67 +577,6 @@ thead th {
 
 .progress-bar.warn   { background: var(--black); }
 .progress-bar.danger { background: var(--black); }
-
-/* Decision rules */
-.rule-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--border2);
-  font-size: 11.5px;
-}
-
-.rule-row:last-child { border-bottom: none; }
-
-.rule-icon {
-  width: 20px;
-  height: 20px;
-  border: 1px solid;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  flex-shrink: 0;
-}
-
-.rule-icon.green { border-color: var(--black); color: var(--bg); background: var(--black); }
-.rule-icon.amber { border-color: var(--border); color: var(--text); background: var(--bg); }
-.rule-icon.red   { border-color: var(--black); color: var(--bg); background: var(--black); }
-
-.rule-text { color: var(--muted); line-height: 1.4; }
-.rule-text b { color: var(--text); font-weight: 600; }
-
-/* Flow steps */
-.flow-step {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 6px 0;
-}
-
-.step-num {
-  width: 16px;
-  height: 16px;
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--muted);
-  flex-shrink: 0;
-  margin-top: 2px;
-  font-family: var(--mono);
-}
-
-.step-text {
-  font-size: 11.5px;
-  color: var(--muted);
-  line-height: 1.45;
-}
-
-.step-text b { color: var(--text); font-weight: 600; }
 
 /* Address chip */
 .addr-chip {
@@ -1527,41 +1465,6 @@ thead th {
 }
 .al-term-link:hover { color: #7ab0e8; }
 
-/* Legacy card styles kept for potential reuse */
-.al-card {
-  border: 1px solid var(--border); background: var(--bg); padding: 10px 14px;
-  display: flex; flex-direction: column; gap: 5px;
-  animation: cardIn 0.2s ease; transition: background 0.1s;
-}
-@keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-.al-card:hover    { background: var(--bg2); }
-.al-card-thinking { border-left: 2px solid var(--border); }
-.al-card-request  { border-left: 2px solid var(--blue-bd); }
-.al-card-response { border-left: 2px solid var(--green-bd); }
-.al-card-error    { border-left: 2px solid var(--red-bd); background: var(--red-bg); }
-.al-card-done     { border-left: 2px solid var(--blue-bd); background: var(--blue-bg); }
-.al-card-payment  { border-left: 2px solid var(--border); }
-
-.al-card-header { display: flex; align-items: center; gap: 8px; }
-.al-card-title  { flex: 1; font-size: 12.5px; font-weight: 500; color: var(--ink); min-width: 0; }
-.al-card-time   { font-family: var(--mono); font-size: 10px; color: var(--faint); flex-shrink: 0; }
-
-.al-card-detail {
-  font-family: var(--mono); font-size: 11px; color: var(--muted);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 26px;
-}
-
-.al-card-payment-meta { display: flex; align-items: center; gap: 12px; padding-left: 26px; flex-wrap: wrap; }
-.al-meta-amount       { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--black); }
-.al-meta-link         { font-family: var(--mono); font-size: 10px; color: var(--blue); text-decoration: none; border-bottom: 1px dashed var(--blue-bd); transition: color 0.15s; }
-.al-meta-link:hover   { color: var(--black); }
-
-.al-icon         { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; border: 1px solid; }
-.al-icon-info    { color: var(--muted);  border-color: var(--border);   background: var(--bg3); }
-.al-icon-success { color: var(--green);  border-color: var(--green-bd); background: var(--green-bg); }
-.al-icon-error   { color: var(--red);    border-color: var(--red-bd);   background: var(--red-bg); }
-.al-icon-ledger  { color: var(--amber);  border-color: var(--amber-bd); background: var(--amber-bg); }
-
 .al-side-col     { display: flex; flex-direction: column; overflow-y: auto; background: var(--bg); }
 .al-side-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
 .al-side-label   { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); font-weight: 600; margin-bottom: 10px; }
@@ -1570,9 +1473,6 @@ thead th {
 .al-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
 .al-stat       { background: var(--bg); padding: 10px 12px; }
 .al-stat-val   { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--black); letter-spacing: -0.8px; line-height: 1; margin-bottom: 2px; }
-.al-val-green  { color: var(--green); }
-.al-val-amber  { color: var(--amber); }
-.al-val-red    { color: var(--red); }
 .al-val-pulse  { animation: statPulse 1.5s ease-in-out infinite; }
 @keyframes statPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .al-stat-key   { font-size: 9.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
@@ -1699,11 +1599,6 @@ thead th {
   background: #f97316;
   flex-shrink: 0;
   animation: blink 2s ease-in-out infinite;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.3; }
 }
 
 /* Fields */

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { shortAddr } from '../utils'
 
 export interface AgentConfig {
   id: string
@@ -36,10 +37,6 @@ const TASK_PRESETS = [
     desc: 'Runs all 3 scenarios: auto, ledger approval, and blacklist denial.',
   },
 ]
-
-function shortAddr(addr: string) {
-  return addr.slice(0, 6) + '…' + addr.slice(-4)
-}
 
 export default function AgentForm({ walletAddress, onSubmit, onBack }: Props) {
   const [name, setName]             = useState('')

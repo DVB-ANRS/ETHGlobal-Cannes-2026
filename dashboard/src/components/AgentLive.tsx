@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PaymentRecord } from '../types'
 import type { AgentConfig } from './AgentForm'
+import { shortAddr } from '../utils'
 
 interface AgentEvent {
   type: 'thinking' | 'tool_call' | 'payment' | 'response' | 'error' | 'done'
@@ -70,11 +71,6 @@ function fmtTime(ts: number) {
 function fmtElapsed(s: number) {
   if (s < 60) return `${s}s`
   return `${Math.floor(s / 60)}m ${s % 60}s`
-}
-
-function shortAddr(addr: string) {
-  if (!addr || addr.length < 12) return addr
-  return addr.slice(0, 8) + '…' + addr.slice(-6)
 }
 
 // ── Terminal line renderers ──────────────────────────────────

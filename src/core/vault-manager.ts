@@ -8,7 +8,6 @@ import {
   createPublicClient,
   createWalletClient,
   http,
-  verifyMessage,
   keccak256,
   toBytes,
   parseUnits,
@@ -46,22 +45,6 @@ function deriveMnemonic(signature: string): string {
   // keccak256 returns 32 bytes hex, we need 16 bytes for 12-word mnemonic
   const entropy = toBytes(hash).slice(0, 16);
   return entropyToMnemonic(entropy, english);
-}
-
-// ─── Signature verification ─────────────────────────────────────────
-
-async function verifyWalletSignature(
-  walletAddress: string,
-  signature: string
-): Promise<boolean> {
-  // Use lowercased address for consistent message derivation
-  const message = deriveMessage(walletAddress.toLowerCase());
-  const valid = await verifyMessage({
-    address: walletAddress as `0x${string}`,
-    message,
-    signature: signature as `0x${string}`,
-  });
-  return valid;
 }
 
 // ─── Unlink client creation ─────────────────────────────────────────

@@ -16,7 +16,7 @@ router.post("/onboard/setup", async (req, res) => {
     res.json({
       ...result,
       depositAddress: "0x647f9b99af97e4b79DD9Dd6de3b583236352f482",
-      message: deriveMessage(walletAddress),
+      message: vaultManager.deriveMessage(walletAddress),
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
@@ -118,11 +118,7 @@ router.get("/onboard/message", (req, res) => {
     res.status(400).json({ error: "wallet query param required" });
     return;
   }
-  res.json({ message: deriveMessage(wallet) });
+  res.json({ message: vaultManager.deriveMessage(wallet) });
 });
-
-function deriveMessage(wallet: string): string {
-  return vaultManager.deriveMessage(wallet);
-}
 
 export default router;
