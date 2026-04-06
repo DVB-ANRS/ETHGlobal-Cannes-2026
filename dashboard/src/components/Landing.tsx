@@ -129,7 +129,7 @@ export default function Landing({ onLaunch }: Props) {
 
       {/* ── Nav ── */}
       <nav className="l-nav">
-        <img src="/Logo SecretPay.png" alt="SecretPay" className="l-nav-logo" />
+        <img src="/logo.png" alt="SecretPay" className="l-nav-logo" />
         <div className="l-nav-right">
           <button className="l-nav-btn" onClick={onLaunch}>Dashboard</button>
         </div>

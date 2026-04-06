@@ -107,7 +107,7 @@ export default function AgentForm({ walletAddress, onSubmit, onBack }: Props) {
         <div className="af-header">
           <button className="af-back" onClick={onBack}>← Back</button>
           <div className="af-logo-row">
-            <img src="/secret_pay.png" alt="SecretPay" className="af-logo" />
+            <img src="/logo.png" alt="SecretPay" className="af-logo" />
           </div>
         </div>
 

@@ -32,7 +32,7 @@ export default function Header({ balance, onBack }: Props) {
       <button className="header-back" onClick={onBack}>← Back</button>
 
       <div className="logo">
-        <img src="/Logo SecretPay.png" alt="SecretPay" className="header-logo-img" />
+        <img src="/logo.png" alt="SecretPay" className="header-logo-img" />
       </div>
 
       <div className="header-sep" />
